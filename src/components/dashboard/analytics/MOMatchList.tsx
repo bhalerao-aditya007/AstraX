@@ -1,5 +1,5 @@
 // src/components/dashboard/analytics/MOMatchList.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import Icon from "../../ui/Icon";
 import ConfidenceBadge from "../../ui/ConfidenceBadge";
 import { mockMOMatches, type MOMatch } from "../../../data/mockCaseData";

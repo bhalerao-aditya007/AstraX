@@ -1,5 +1,5 @@
 // src/components/intake/EvidenceChannelCard.tsx
-import React, { useRef } from "react";
+import { useRef } from "react";
 import Icon, { type IconName } from "../ui/Icon";
 
 export interface ChannelFile {

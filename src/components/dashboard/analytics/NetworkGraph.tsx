@@ -49,7 +49,6 @@ const NODE_RADIUS = 22;
 export default function NetworkGraph({
     data,
     onNodeClick,
-    onEdgeClick,
     theme = "default",
     showControls = true,
     title,

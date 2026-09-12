@@ -185,12 +185,12 @@ export default function Workspace() {
                     <FactSheet
                         data={{
                             ...mockFactSheet,
-                            caseId: selectedCase.id,
-                            firNumber: selectedCase.name,
-                            track: (selectedCase.track ?? 2) as 1 | 2,
-                            triageReason: selectedCase.triage_reason || mockFactSheet.triageReason,
+                            caseId: selectedCase?.id || selectedCaseId,
+                            firNumber: selectedCase?.name || "Case Workspace",
+                            track: ((selectedCase?.track ?? 2) as 1 | 2),
+                            triageReason: selectedCase?.triage_reason || mockFactSheet.triageReason,
                         }}
-                        caseId={selectedCase.id}
+                        caseId={selectedCase?.id || selectedCaseId}
                         isEmbedded={true}
                     />
                 </div>

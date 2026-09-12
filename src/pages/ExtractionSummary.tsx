@@ -1,5 +1,5 @@
 // src/pages/ExtractionSummary.tsx
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import FactSheet from "../components/summary/FactSheet";

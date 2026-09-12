@@ -1,5 +1,5 @@
 // src/components/dashboard/DeltaIngestionModal.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import Icon from "../ui/Icon";
 import EvidenceChannelCard, {
     type ChannelConfig,

@@ -1,5 +1,4 @@
 // src/components/ui/Icon.tsx
-import React from "react";
 
 export type IconName =
     | "shield"

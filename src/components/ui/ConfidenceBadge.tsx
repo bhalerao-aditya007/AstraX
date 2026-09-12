@@ -1,5 +1,4 @@
 // src/components/ui/ConfidenceBadge.tsx
-import React from "react";
 
 export type ConfidenceTier = "strong" | "possible" | "hypothesis";
 

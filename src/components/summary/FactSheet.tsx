@@ -1,5 +1,5 @@
 // src/components/summary/FactSheet.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Icon, { type IconName } from "../ui/Icon";
 import TrackBadge from "../ui/TrackBadge";
