@@ -10,23 +10,23 @@ const config: Record<
 > = {
     pending: {
         label: "Pending",
-        className: "bg-surface-200 text-surface-600",
+        className: "bg-surface-200 text-surface-400 border border-surface-300",
     },
     processing: {
         label: "Processing",
-        className: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
+        className: "bg-sky-500/10 text-sky-400 border border-sky-500/30",
     },
     success: {
         label: "Success",
-        className: "bg-green-50 text-green-700 ring-1 ring-green-200",
+        className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30",
     },
     failed: {
         label: "Failed",
-        className: "bg-red-50 text-red-700 ring-1 ring-red-200",
+        className: "bg-rose-500/10 text-rose-400 border border-rose-500/30",
     },
     finish: {
         label: "Finished",
-        className: "bg-purple-50 text-purple-700 ring-1 ring-purple-200",
+        className: "bg-purple-500/10 text-purple-400 border border-purple-500/30",
     },
 };
 

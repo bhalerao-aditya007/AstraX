@@ -6,16 +6,24 @@ import { apiRequest } from "./api";
 export interface Case {
   id: string;
   name: string;
+  track?: 1 | 2;
+  triage_reason?: string;
+  version?: number;
   created_at: string;
   updated_at: string;
 }
 
 export interface CreateCaseInput {
   name: string;
+  track?: 1 | 2;
+  triage_reason?: string;
 }
 
 export interface UpdateCaseInput {
-  name: string;
+  name?: string;
+  track?: 1 | 2;
+  triage_reason?: string;
+  version?: number;
 }
 
 // ─────────────────────────────────────

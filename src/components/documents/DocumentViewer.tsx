@@ -134,7 +134,7 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
                             {document.description && document.description.length > 100 && (
                                 <button 
                                     onClick={() => setDescExpanded(!descExpanded)}
-                                    className="mt-1 text-xs font-semibold text-brand-600 hover:text-brand-700"
+                                    className="mt-1 text-xs font-semibold text-amber-400 hover:text-amber-300"
                                 >
                                     {descExpanded ? "Show less" : "Show more"}
                                 </button>
@@ -151,7 +151,7 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title="Open in new tab"
-                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-300 text-surface-500 transition hover:bg-surface-100 hover:text-surface-700"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-300 text-surface-400 transition hover:bg-surface-200 hover:text-surface-800"
                             >
                                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
@@ -164,7 +164,7 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
                             onClick={handleDelete}
                             disabled={isDeleting}
                             title="Delete document"
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-300 text-surface-400 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-surface-300 text-surface-400 transition hover:border-rose-500/50 hover:bg-rose-500/20 hover:text-rose-400 disabled:opacity-50"
                         >
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
@@ -210,20 +210,20 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
 
                 {/* Status-specific messages */}
                 {document.status === "processing" && (
-                    <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 p-5 text-sm text-blue-700">
-                        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600" />
+                    <div className="flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 p-5 text-sm text-blue-300">
+                        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
                         This document is currently being processed. The preview will be available when processing is complete.
                     </div>
                 )}
 
                 {document.status === "pending" && (
-                    <div className="rounded-xl border border-surface-200 bg-surface-100 p-5 text-sm text-surface-500">
+                    <div className="rounded-xl border border-surface-300 bg-surface-100 p-5 text-sm text-surface-400">
                         This document is pending upload confirmation.
                     </div>
                 )}
 
                 {document.status === "failed" && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+                    <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-5 text-sm text-rose-300">
                         Processing failed for this document. No preview is available.
                     </div>
                 )}
@@ -235,25 +235,25 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
                     </h2>
 
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                        <div>
-                            <p className="text-xs text-surface-400">Document ID</p>
-                            <p className="mt-1 truncate text-sm font-medium text-surface-700">{document.id}</p>
+                        <div className="rounded-lg border border-surface-200 bg-surface-100 p-3">
+                            <p className="text-[10px] uppercase font-mono tracking-wider text-surface-500">Document ID</p>
+                            <p className="mt-1 truncate text-xs font-mono text-amber-400">{document.id}</p>
                         </div>
-                        <div>
-                            <p className="text-xs text-surface-400">Case ID</p>
-                            <p className="mt-1 truncate text-sm font-medium text-surface-700">{document.case_id}</p>
+                        <div className="rounded-lg border border-surface-200 bg-surface-100 p-3">
+                            <p className="text-[10px] uppercase font-mono tracking-wider text-surface-500">Case ID</p>
+                            <p className="mt-1 truncate text-xs font-mono text-surface-300">{document.case_id}</p>
                         </div>
-                        <div>
-                            <p className="text-xs text-surface-400">Type</p>
-                            <p className="mt-1 text-sm font-medium capitalize text-surface-700">{document.document_type}</p>
+                        <div className="rounded-lg border border-surface-200 bg-surface-100 p-3">
+                            <p className="text-[10px] uppercase font-mono tracking-wider text-surface-500">Type</p>
+                            <p className="mt-1 text-xs font-mono capitalize text-surface-300">{document.document_type}</p>
                         </div>
-                        <div>
-                            <p className="text-xs text-surface-400">Created</p>
-                            <p className="mt-1 text-sm font-medium text-surface-700">{new Date(document.created_at).toLocaleString()}</p>
+                        <div className="rounded-lg border border-surface-200 bg-surface-100 p-3">
+                            <p className="text-[10px] uppercase font-mono tracking-wider text-surface-500">Created</p>
+                            <p className="mt-1 text-xs font-mono text-surface-400">{new Date(document.created_at).toLocaleString()}</p>
                         </div>
-                        <div>
-                            <p className="text-xs text-surface-400">Updated</p>
-                            <p className="mt-1 text-sm font-medium text-surface-700">{new Date(document.updated_at).toLocaleString()}</p>
+                        <div className="rounded-lg border border-surface-200 bg-surface-100 p-3">
+                            <p className="text-[10px] uppercase font-mono tracking-wider text-surface-500">Updated</p>
+                            <p className="mt-1 text-xs font-mono text-surface-400">{new Date(document.updated_at).toLocaleString()}</p>
                         </div>
                     </div>
                 </section>

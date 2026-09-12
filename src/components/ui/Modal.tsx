@@ -11,12 +11,12 @@ export default function Modal({ title, onClose, children }: ModalProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-surface-900/40"
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
                 onClick={onClose}
             />
 
             {/* Panel */}
-            <div className="relative z-10 w-full max-w-md rounded-xl border border-surface-200 bg-surface-0 p-6 shadow-xl">
+            <div className="relative z-10 w-full max-w-md rounded-xl border border-surface-300 bg-surface-100 p-6 shadow-2xl">
                 <div className="mb-5 flex items-center justify-between">
                     <h2 className="text-base font-bold text-surface-900">
                         {title}
@@ -25,7 +25,7 @@ export default function Modal({ title, onClose, children }: ModalProps) {
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex h-7 w-7 items-center justify-center rounded-md text-surface-400 transition hover:bg-surface-100 hover:text-surface-700"
+                        className="flex h-7 w-7 items-center justify-center rounded-md text-surface-400 transition hover:bg-surface-200 hover:text-surface-800"
                     >
                         ✕
                     </button>

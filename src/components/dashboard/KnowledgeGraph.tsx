@@ -416,11 +416,11 @@ export default function KnowledgeGraph() {
                 {/* Tooltip */}
                 {tooltip && (
                     <div
-                        className="pointer-events-none absolute z-10 rounded-lg border border-surface-200 bg-white px-3 py-2 shadow-lg"
+                        className="pointer-events-none absolute z-10 rounded-lg border border-surface-300 bg-surface-100 px-3 py-2 shadow-xl"
                         style={{ left: tooltip.x + 12, top: tooltip.y - 10 }}
                     >
-                        <p className="text-xs font-bold text-surface-900">{tooltip.node.label}</p>
-                        <p className="text-[10px] text-surface-500">{tooltip.node.type}</p>
+                        <p className="text-xs font-bold text-surface-900 font-mono">{tooltip.node.label}</p>
+                        <p className="text-[10px] text-surface-400 uppercase tracking-wider">{tooltip.node.type}</p>
                     </div>
                 )}
             </div>

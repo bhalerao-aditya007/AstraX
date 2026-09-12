@@ -1,6 +1,8 @@
+// src/components/cases/CaseItem.tsx
 import { useNavigate } from "react-router-dom";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import type { Case } from "../../services/cases";
+import Icon from "../ui/Icon";
 
 interface CaseItemProps {
     caseItem: Case;
@@ -14,52 +16,78 @@ export default function CaseItem({ caseItem, onEdit, onDelete }: CaseItemProps) 
     const navigate = useNavigate();
 
     const isSelected = selectedCaseId === caseItem.id;
+    const isTrack2 = (caseItem.track ?? 2) === 2;
 
     return (
         <div
-            className={`group relative flex items-center rounded-lg px-3 py-2.5 text-sm transition cursor-pointer ${
+            className={`group relative flex items-center rounded-xl px-3 py-2.5 text-xs transition-all cursor-pointer font-sans border ${
                 isSelected
-                    ? "bg-brand-50 text-brand-700 font-semibold"
-                    : "text-surface-700 hover:bg-surface-100"
+                    ? "bg-insignia-500/15 border-insignia-500/40 text-surface-900 font-semibold shadow-sm"
+                    : "border-transparent text-surface-400 hover:text-surface-200 hover:bg-surface-200/50"
             }`}
             onClick={() => selectCase(caseItem.id)}
         >
-            {/* Indicator */}
+            {/* Left Accent Bar */}
             {isSelected && (
-                <div className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-brand-600" />
+                <div className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-insignia-400" />
             )}
 
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-200/70 text-xs font-bold text-surface-500">
-                {caseItem.name.charAt(0).toUpperCase()}
+            {/* Case Icon Avatar */}
+            <div
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-mono font-bold ${
+                    isSelected
+                        ? "bg-insignia-500/20 text-insignia-400 border border-insignia-500/30"
+                        : "bg-surface-200 text-surface-400"
+                }`}
+            >
+                <Icon name={isTrack2 ? "network-graph" : "scale-justice"} size={13} />
             </div>
 
-            <span className="ml-2.5 min-w-0 flex-1 truncate">{caseItem.name}</span>
+            <div className="ml-2.5 min-w-0 flex-1">
+                <div className="truncate text-surface-900 font-medium">{caseItem.name}</div>
+                <div className="flex items-center gap-1.5 text-[10px] font-mono text-surface-500 mt-0.5">
+                    <span className={isTrack2 ? "text-insignia-400" : "text-surface-400"}>
+                        Track {caseItem.track ?? 2}
+                    </span>
+                    <span>•</span>
+                    <span>{new Date(caseItem.created_at).toLocaleDateString()}</span>
+                </div>
+            </div>
 
-            {/* Edit / Delete icons */}
-            <div className={`flex shrink-0 items-center gap-0.5 ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+            {/* Action Buttons */}
+            <div className={`flex shrink-0 items-center gap-1 ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
                 <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/cases/${caseItem.id}`); }}
-                    title="Open Detailed View"
-                    className="flex h-6 w-6 items-center justify-center rounded text-brand-600 hover:bg-brand-100"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/cases/${caseItem.id}`);
+                    }}
+                    title="Open Case Analysis Workspace"
+                    className="flex h-6 w-6 items-center justify-center rounded text-insignia-400 hover:bg-insignia-500/20 transition-colors"
                 >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                    <Icon name="external-link" size={13} />
                 </button>
                 <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); onEdit(caseItem); }}
-                    title="Edit"
-                    className="flex h-6 w-6 items-center justify-center rounded text-surface-400 hover:bg-surface-200 hover:text-surface-700"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(caseItem);
+                    }}
+                    title="Edit Case Name"
+                    className="flex h-6 w-6 items-center justify-center rounded text-surface-400 hover:bg-surface-200 hover:text-surface-200 transition-colors"
                 >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" /></svg>
+                    <Icon name="edit" size={13} />
                 </button>
                 <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); onDelete(caseItem); }}
-                    title="Delete"
-                    className="flex h-6 w-6 items-center justify-center rounded text-surface-400 hover:bg-red-50 hover:text-red-600"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(caseItem);
+                    }}
+                    title="Delete Case"
+                    className="flex h-6 w-6 items-center justify-center rounded text-surface-400 hover:bg-red-950/50 hover:text-red-400 transition-colors"
                 >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                    <Icon name="trash" size={13} />
                 </button>
             </div>
         </div>

@@ -1,3 +1,4 @@
+// src/components/layout/DashboardLayout.tsx
 import { useEffect, useState, useRef } from "react";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { useDocumentsStore } from "../../store/documentsStore";
@@ -5,6 +6,7 @@ import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import Workspace from "./Workspace";
 import DocumentViewer from "../documents/DocumentViewer";
+import Icon from "../ui/Icon";
 
 export default function DashboardLayout() {
     const selectedDocumentId = useWorkspaceStore((state) => state.selectedDocumentId);
@@ -15,16 +17,14 @@ export default function DashboardLayout() {
     const [rightOpen, setRightOpen] = useState(false);
     
     // Resizing logic for right panel
-    const [rightWidth, setRightWidth] = useState(500);
+    const [rightWidth, setRightWidth] = useState(520);
     const isDraggingRef = useRef(false);
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!isDraggingRef.current) return;
-            // Calculate new width: window.innerWidth - mouseX
             const newWidth = window.innerWidth - e.clientX;
-            // Min 300px, max 900px or 80% of window
-            if (newWidth > 300 && newWidth < window.innerWidth * 0.8) {
+            if (newWidth > 320 && newWidth < window.innerWidth * 0.8) {
                 setRightWidth(newWidth);
             }
         };
@@ -32,7 +32,7 @@ export default function DashboardLayout() {
         const handleMouseUp = () => {
             if (isDraggingRef.current) {
                 isDraggingRef.current = false;
-                document.body.style.cursor = '';
+                document.body.style.cursor = "";
             }
         };
 
@@ -44,7 +44,7 @@ export default function DashboardLayout() {
         };
     }, []);
 
-    // Auto-open the document panel when a document is selected
+    // Auto-open document viewer when a document is selected
     useEffect(() => {
         if (selectedDocumentId) {
             setRightOpen(true);
@@ -52,40 +52,48 @@ export default function DashboardLayout() {
     }, [selectedDocumentId]);
 
     return (
-        <div className="flex h-screen flex-col bg-surface-50">
+        <div className="flex h-screen flex-col bg-surface-0 font-sans text-surface-700 overflow-hidden">
             <Navbar />
             
-            {/* Toolbar for toggling panels (VS Code style) */}
-            <div className="flex items-center justify-between border-b border-surface-200 bg-surface-100 px-4 py-1.5 shadow-sm z-10">
-                <button 
-                    onClick={() => setLeftOpen(!leftOpen)}
-                    className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-surface-600 hover:bg-surface-200"
-                >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
-                    {leftOpen ? "Hide Cases" : "Show Cases"}
-                </button>
+            {/* Command Bar Toolbar for toggling panels */}
+            <div className="flex items-center justify-between border-b border-surface-300 bg-surface-100/90 px-4 py-1.5 z-20 font-mono text-xs">
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setLeftOpen(!leftOpen)}
+                        className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-surface-400 hover:text-surface-200 hover:bg-surface-200 transition-colors cursor-pointer"
+                    >
+                        <Icon name="folder" size={13} />
+                        <span>{leftOpen ? "Hide Cases" : "Show Cases"}</span>
+                    </button>
+                    <span className="text-surface-400">|</span>
+                    <span className="text-surface-400">Operational Records Database</span>
+                </div>
 
                 {selectedDocumentId && (
                     <button 
                         onClick={() => setRightOpen(!rightOpen)}
-                        className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-surface-600 hover:bg-surface-200"
+                        className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-surface-400 hover:text-surface-200 hover:bg-surface-200 transition-colors cursor-pointer"
                     >
-                        {rightOpen ? "Hide Document" : "Show Document"}
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" /></svg>
+                        <span>{rightOpen ? "Hide Document" : "Show Document"}</span>
+                        <Icon name="file-text" size={13} />
                     </button>
                 )}
             </div>
 
-            <div className="flex min-h-0 flex-1 overflow-hidden">
-                {/* Left Panel: Cases */}
-                <div className={`transition-all duration-300 ease-in-out border-r border-surface-200 shadow-sm flex shrink-0 ${leftOpen ? 'w-72 opacity-100' : 'w-0 opacity-0 overflow-hidden border-none'}`}>
-                    <div className="w-72 flex shrink-0 h-full">
+            <div className="relative flex min-h-0 flex-1 overflow-hidden">
+                {/* Left Panel: Cases List */}
+                <div
+                    className={`transition-all duration-300 ease-in-out border-r border-surface-300 bg-surface-100 flex shrink-0 ${
+                        leftOpen ? "w-80 opacity-100" : "w-0 opacity-0 overflow-hidden border-none"
+                    }`}
+                >
+                    <div className="w-80 flex shrink-0 h-full">
                         <Sidebar />
                     </div>
                 </div>
 
                 {/* Middle Panel: Workspace */}
-                <div className="flex min-w-0 flex-1 flex-col shadow-inner bg-surface-50">
+                <div className="flex min-w-0 flex-1 flex-col bg-surface-0 overflow-y-auto">
                     <Workspace />
                 </div>
 
@@ -94,19 +102,18 @@ export default function DashboardLayout() {
                     <>
                         {/* Resizer Handle */}
                         <div 
-                            className="w-1.5 cursor-col-resize hover:bg-brand-400 active:bg-brand-500 z-10 transition-colors"
+                            className="w-1.5 cursor-col-resize hover:bg-insignia-400 active:bg-insignia-500 z-30 transition-colors bg-surface-300"
                             onMouseDown={() => {
                                 isDraggingRef.current = true;
-                                document.body.style.cursor = 'col-resize';
+                                document.body.style.cursor = "col-resize";
                             }}
                         />
+
                         <div 
-                            style={{ width: rightWidth }}
-                            className="bg-white flex shrink-0 border-l border-surface-200 shadow-sm"
+                            style={{ width: `${rightWidth}px` }} 
+                            className="shrink-0 border-l border-surface-300 bg-surface-100 h-full flex flex-col z-20 shadow-2xl"
                         >
-                            <div className="w-full flex shrink-0 h-full p-0 overflow-hidden">
-                                <DocumentViewer document={selectedDocument} />
-                            </div>
+                            <DocumentViewer document={selectedDocument} />
                         </div>
                     </>
                 )}

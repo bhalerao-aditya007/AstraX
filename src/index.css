@@ -12,23 +12,59 @@
   --color-brand-800: #1e40af;
   --color-brand-900: #1e3a8a;
 
-  --color-surface-0: #ffffff;
-  --color-surface-50: #fafbfc;
-  --color-surface-100: #f4f5f7;
-  --color-surface-200: #ebecf0;
-  --color-surface-300: #dfe1e6;
-  --color-surface-400: #c1c7d0;
-  --color-surface-500: #97a0af;
-  --color-surface-600: #6b778c;
-  --color-surface-700: #505f79;
-  --color-surface-800: #344563;
-  --color-surface-900: #172b4d;
+  /* Official Gold / Amber Insignia */
+  --color-insignia-50: #fbf7ee;
+  --color-insignia-100: #f5eed3;
+  --color-insignia-200: #ebdc9f;
+  --color-insignia-300: #dec469;
+  --color-insignia-400: #d4af37;
+  --color-insignia-500: #c9a227;
+  --color-insignia-600: #aa831b;
+  --color-insignia-700: #886518;
+  --color-insignia-800: #715219;
+  --color-insignia-900: #604419;
+
+  /* Inverted Dark Ops Room Surface Ramp */
+  --color-surface-0: #0b0f14;    /* darkest canvas */
+  --color-surface-50: #10151c;   /* base panel bg */
+  --color-surface-100: #161c25;  /* card bg */
+  --color-surface-200: #202936;  /* elevated card / secondary container */
+  --color-surface-300: #2d3848;  /* subtle borders */
+  --color-surface-400: #475569;  /* strong borders / muted icons */
+  --color-surface-500: #64748b;  /* secondary text */
+  --color-surface-600: #94a3b8;  /* body text */
+  --color-surface-700: #cbd5e1;  /* bright text / labels */
+  --color-surface-800: #e2e8f0;  /* headings */
+  --color-surface-900: #f8fafc;  /* near-white highlights */
 }
 
 @layer base {
   body {
-    @apply font-sans antialiased;
+    @apply font-sans antialiased bg-surface-0 text-surface-700 selection:bg-insignia-500/30 selection:text-white;
   }
+}
+
+/* Tactical Background Grid & Dot Matrix */
+.bg-tactical-grid {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.bg-tactical-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-tactical-radar {
+  background: radial-gradient(circle at 50% 50%, rgba(201, 162, 39, 0.04) 0%, rgba(11, 15, 20, 0.95) 75%);
+}
+
+/* Monospace Systematic Utility */
+.font-mono-system {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  letter-spacing: -0.02em;
 }
 
 @keyframes marquee {
@@ -37,5 +73,21 @@
 }
 
 .animate-marquee {
-  animation: marquee 20s linear infinite;
+  animation: marquee 25s linear infinite;
+}
+
+/* Custom Tactical Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0f14;
+}
+::-webkit-scrollbar-thumb {
+  background: #202936;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2d3848;
 }

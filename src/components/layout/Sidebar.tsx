@@ -144,16 +144,16 @@ export default function Sidebar() {
             {deleteTarget && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div
-                        className="absolute inset-0 bg-surface-900/40"
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
                         onClick={() => !isDeleting && setDeleteTarget(null)}
                     />
 
-                    <div className="relative z-10 w-full max-w-sm rounded-xl border border-surface-200 bg-surface-0 p-6 shadow-xl">
+                    <div className="relative z-10 w-full max-w-sm rounded-xl border border-surface-200 bg-surface-100 p-6 shadow-2xl">
                         <h2 className="text-base font-bold text-surface-900">
                             Delete case?
                         </h2>
 
-                        <p className="mt-2 text-sm text-surface-600">
+                        <p className="mt-2 text-sm text-surface-400">
                             <span className="font-semibold text-surface-900">
                                 {deleteTarget.name}
                             </span>{" "}
@@ -161,7 +161,7 @@ export default function Sidebar() {
                         </p>
 
                         {deleteError && (
-                            <p className="mt-3 text-sm text-red-600">
+                            <p className="mt-3 text-sm text-rose-400 font-mono">
                                 {deleteError}
                             </p>
                         )}
@@ -171,7 +171,7 @@ export default function Sidebar() {
                                 type="button"
                                 onClick={() => setDeleteTarget(null)}
                                 disabled={isDeleting}
-                                className="rounded-lg border border-surface-300 bg-surface-0 px-4 py-2 text-sm font-medium text-surface-700 transition hover:bg-surface-100 disabled:opacity-50"
+                                className="rounded-lg border border-surface-300 bg-surface-200 px-4 py-2 text-sm font-medium text-surface-300 transition hover:bg-surface-300 hover:text-surface-900 disabled:opacity-50"
                             >
                                 Cancel
                             </button>
@@ -180,7 +180,7 @@ export default function Sidebar() {
                                 type="button"
                                 onClick={handleDelete}
                                 disabled={isDeleting}
-                                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:opacity-50"
                             >
                                 {isDeleting ? "Deleting…" : "Delete"}
                             </button>

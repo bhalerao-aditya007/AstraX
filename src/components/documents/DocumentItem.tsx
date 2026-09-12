@@ -32,8 +32,8 @@ export default function DocumentItem({ document }: DocumentItemProps) {
             onClick={() => selectDocument(document.id)}
             className={`group relative cursor-pointer rounded-xl border p-4 transition ${
                 isSelected
-                    ? "border-brand-300 bg-brand-50 shadow-sm"
-                    : "border-surface-200 bg-surface-0 hover:border-surface-300 hover:shadow-sm"
+                    ? "border-amber-500/50 bg-amber-500/10 shadow-sm"
+                    : "border-surface-200 bg-surface-100 hover:border-surface-300 hover:bg-surface-200/60 hover:shadow-sm"
             }`}
         >
             <div className="flex items-start justify-between gap-4">
@@ -66,7 +66,7 @@ export default function DocumentItem({ document }: DocumentItemProps) {
                         type="button"
                         onClick={handleDelete}
                         title="Delete document"
-                        className={`flex h-6 w-6 items-center justify-center rounded text-surface-400 transition hover:bg-red-50 hover:text-red-600 ${
+                        className={`flex h-6 w-6 items-center justify-center rounded text-surface-400 transition hover:bg-rose-500/20 hover:text-rose-400 ${
                             isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                         }`}
                     >

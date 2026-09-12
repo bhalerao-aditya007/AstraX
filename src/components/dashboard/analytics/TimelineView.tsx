@@ -1,5 +1,9 @@
+// src/components/dashboard/analytics/TimelineView.tsx
 import { useState } from "react";
 import { mockTimeline } from "../../../data/mockCaseData";
+import ConfidenceBadge from "../../ui/ConfidenceBadge";
+import SourceCitationPopover from "../../ui/SourceCitationPopover";
+import Icon from "../../ui/Icon";
 
 export default function TimelineView({ onSelect }: { onSelect?: (item: any) => void }) {
     const [filter, setFilter] = useState("all");
@@ -8,35 +12,50 @@ export default function TimelineView({ onSelect }: { onSelect?: (item: any) => v
         ? mockTimeline 
         : mockTimeline.filter(t => t.type === filter);
 
-    const sorted = [...filtered].sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
+    const sorted = [...filtered].sort(
+        (a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime()
+    );
 
     return (
-        <div className="absolute inset-0 flex flex-col bg-surface-50 p-6 overflow-y-auto">
-            <div className="flex justify-between items-center mb-8 shrink-0">
+        <div className="flex flex-col bg-surface-0 rounded-xl border border-surface-300 p-5 font-sans">
+            {/* Header & Filter Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-surface-300">
                 <div>
-                    <h3 className="text-surface-900 font-bold text-lg">Chronological Event Timeline</h3>
-                    <p className="text-surface-500 text-sm">Sequence of mapped activities</p>
+                    <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
+                        <Icon name="clock" size={16} className="text-insignia-400" />
+                        <span>Chronological Crime Timeline</span>
+                    </h3>
+                    <p className="text-xs text-surface-500 mt-0.5">
+                        Verified sequence of physical and digital incidents cross-referenced with forensic timestamps.
+                    </p>
                 </div>
-                <select 
-                    className="bg-white border border-surface-200 text-sm rounded-lg px-3 py-2 text-surface-700 shadow-sm outline-none"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                >
-                    <option value="all">All Events</option>
-                    <option value="incident">Incidents</option>
-                    <option value="financial">Financial</option>
-                    <option value="communication">Communication</option>
-                    <option value="movement">Movement</option>
-                </select>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-surface-400">Filter Modality:</span>
+                    <select 
+                        className="bg-surface-100 border border-surface-300 text-xs rounded-lg px-2.5 py-1 text-surface-800 font-mono outline-none focus:border-insignia-500"
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                    >
+                        <option value="all">All Channels</option>
+                        <option value="incident">Police Incident / Recovery</option>
+                        <option value="financial">Financial Transfers</option>
+                        <option value="communication">Encrypted Comms</option>
+                        <option value="movement">Physical Movement</option>
+                    </select>
+                </div>
             </div>
 
-            <div className="relative border-l-2 border-brand-200 ml-4 pl-8 flex-1">
-                {sorted.map((event, i) => (
-                    <div key={event.id} className={`relative mb-8 ${i === sorted.length - 1 ? 'mb-0' : ''}`}>
-                        {/* Timeline Dot */}
-                        <div className="absolute -left-[41px] top-1.5 w-5 h-5 rounded-full bg-white border-4 border-brand-500 shadow-sm z-10" />
+            {/* Vertical Timeline Stack */}
+            <div className="relative border-l-2 border-surface-300 ml-4 pl-8 space-y-6">
+                {sorted.map((event) => (
+                    <div key={event.id} className="relative group">
+                        {/* Timeline Node Dot */}
+                        <div className="absolute -left-[41px] top-2 flex h-5 w-5 items-center justify-center rounded-full bg-surface-0 border-4 border-insignia-500 shadow-[0_0_8px_rgba(201,162,39,0.4)] z-10" />
+
+                        {/* Event Card */}
                         <div 
-                            className="bg-white rounded-xl border border-surface-200 shadow-sm p-4 hover:shadow-md transition cursor-pointer hover:border-brand-300"
+                            className="bg-surface-100 rounded-xl border border-surface-300 p-4 transition-all hover:border-insignia-500/50 hover:bg-surface-100/95 cursor-pointer shadow-sm flex flex-col gap-2.5"
                             onClick={() => onSelect && onSelect({
                                 id: event.id,
                                 label: event.description,
@@ -48,33 +67,43 @@ export default function TimelineView({ onSelect }: { onSelect?: (item: any) => v
                                     entity: event.entity,
                                     location: event.location,
                                     ...(event as any).details
-                                }
+                                },
+                                citation: (event as any).citation,
+                                merge_reason: `Timeline event logged at ${event.date} ${event.time} under ${event.type}`
                             })}
                         >
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs font-bold uppercase tracking-wider text-brand-600 bg-brand-50 px-2 py-1 rounded">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-insignia-400 bg-insignia-500/15 border border-insignia-500/30 px-2 py-0.5 rounded">
                                         {event.type}
                                     </span>
-                                    <span className="text-sm font-semibold text-surface-900">{event.entity}</span>
+                                    <span className="text-sm font-bold text-surface-900">
+                                        {event.entity}
+                                    </span>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-sm font-bold text-surface-700">{event.date}</div>
-                                    <div className="text-xs font-mono text-surface-400">{event.time}</div>
+                                
+                                <div className="font-mono text-xs text-right">
+                                    <span className="font-bold text-surface-700">{event.date}</span>
+                                    <span className="text-insignia-400 ml-1.5 font-bold">[{event.time} IST]</span>
                                 </div>
                             </div>
-                            <p className="text-surface-700 text-sm leading-relaxed mb-3">
+
+                            <p className="text-surface-600 text-xs leading-relaxed font-sans">
                                 {event.description}
                             </p>
-                            <div className="flex items-center gap-4 text-xs border-t border-surface-100 pt-3">
-                                <div className="flex items-center gap-1.5 text-surface-500">
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
-                                    {event.location}
+
+                            <div className="flex items-center justify-between border-t border-surface-200/80 pt-2 text-xs">
+                                <div className="flex items-center gap-4 text-surface-500 font-mono text-[11px]">
+                                    <span className="flex items-center gap-1">
+                                        <Icon name="map-pin" size={12} className="text-surface-400" />
+                                        {event.location}
+                                    </span>
+                                    <ConfidenceBadge score={event.confidence} size="sm" />
                                 </div>
-                                <div className="flex items-center gap-1.5 text-surface-500">
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    Confidence: {(event.confidence * 100).toFixed(0)}%
-                                </div>
+
+                                {(event as any).citation && (
+                                    <SourceCitationPopover source={(event as any).citation} />
+                                )}
                             </div>
                         </div>
                     </div>

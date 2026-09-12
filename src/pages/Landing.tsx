@@ -1,13 +1,15 @@
-import { lazy, Suspense, useEffect } from "react";
+// src/pages/Landing.tsx
+import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import dashboardImage from "../assets/dashboard.png";
 import graphImage from "../assets/graph.png";
+import Icon from "../components/ui/Icon";
 
 const HeroScene = lazy(() => import("../components/landing/HeroScene.tsx"));
 
 const fadeUp = {
-    hidden: { opacity: 0, y: 30 },
+    hidden: { opacity: 0, y: 25 },
     visible: (i: number) => ({
         opacity: 1,
         y: 0,
@@ -17,199 +19,198 @@ const fadeUp = {
 
 const features = [
     {
-        icon: (
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
-        ),
-        title: "Multi-Source Data Ingestion",
-        desc: "Securely upload and parse unstructured records, ledgers, and documents while maintaining strict data integrity.",
+        icon: "upload" as const,
+        title: "Multi-Source Evidentiary Intake",
+        desc: "Ingest and parse FIR text, scanned seizure memos, CCTV footage, wiretap audio, and bank CDR ledgers across isolated domain pipelines.",
     },
     {
-        icon: (
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7.5 3.75H6A2.25 2.25 0 0 0 3.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0 1 20.25 6v1.5m0 9V18A2.25 2.25 0 0 1 18 20.25h-1.5m-9 0H6A2.25 2.25 0 0 1 3.75 18v-1.5M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
-        ),
-        title: "Entity Correlation & Profiling",
-        desc: "Automatically correlate identifiers across datasets to build comprehensive profiles of entities, alias networks, and associated assets.",
+        icon: "fingerprint" as const,
+        title: "Entity Correlation & Disambiguation",
+        desc: "Automatically correlate identifiers across fragmented systems to disambiguate targets, identify alias networks, and isolate shell entities.",
     },
     {
-        icon: (
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m9.586-3.828a4.5 4.5 0 0 0-1.242-7.244l-4.5-4.5a4.5 4.5 0 0 0-6.364 6.364l1.757 1.757" /></svg>
-        ),
-        title: "Advanced Link Analysis",
-        desc: "Deploy advanced Graph Neural Networks to expose hidden hierarchies, complex loops, and communication hubs.",
+        icon: "network-graph" as const,
+        title: "GNN Link Analysis & Reconstruction",
+        desc: "Deploy Graph Neural Networks to uncover hidden criminal hierarchies, detect pass-through fund layering, and synthesize testable event theories.",
     },
 ];
 
 export default function Landing() {
-    useEffect(() => {
-        const script = document.createElement("script");
-        script.type = "text/javascript";
-        script.onload = () => {
-            if ((window as any).voiceflow) {
-                (window as any).voiceflow.chat.load({
-                    verify: { projectID: '6aa244d58daada4dbce49a3e' },
-                    url: 'https://general-runtime.voiceflow.com',
-                    voice: {
-                        url: "https://runtime-api.voiceflow.com"
-                    }
-                });
-            }
-        };
-        script.src = "https://cdn.voiceflow.com/widget-next/bundle.mjs";
-        document.body.appendChild(script);
-
-        return () => {
-            if (document.body.contains(script)) {
-                document.body.removeChild(script);
-            }
-        };
-    }, []);
     return (
-        <div className="min-h-screen bg-surface-0 font-sans text-surface-900">
+        <div className="min-h-screen bg-surface-0 font-sans text-surface-700 selection:bg-insignia-500/30 selection:text-white">
             {/* ── Nav ─────────────────────────────────── */}
-            <nav className="relative z-20 mx-auto flex h-20 max-w-[1200px] items-center justify-between px-6">
-                <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600">
-                        <svg
-                            className="h-4.5 w-4.5 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="m21 21-4.35-4.35m2.1-5.4a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"
-                            />
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9.5 11.5a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0Z"
-                            />
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M7.5 17.5c.8-1.4 2.1-2.2 4.5-2.2s3.7.8 4.5 2.2"
-                            />
-                        </svg>
+            <nav className="relative z-20 mx-auto flex h-20 max-w-7xl items-center justify-between px-6 border-b border-surface-200/50">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-insignia-500/15 border border-insignia-500/40 text-insignia-400 shadow-[0_0_15px_rgba(201,162,39,0.25)]">
+                        <Icon name="shield" size={18} />
                     </div>
-                    <span className="text-3xl font-bold tracking-tight text-surface-900">AstraX</span>
+                    <div className="flex flex-col">
+                        <span className="text-xl font-extrabold tracking-tight text-surface-900 leading-none">
+                            AstraX
+                        </span>
+                        <span className="text-[10px] font-mono tracking-widest text-surface-400 uppercase mt-0.5">
+                            SIH26189 Ops Platform
+                        </span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-6">
+
+                <div className="flex items-center gap-4">
                     <Link
                         to="/dashboard"
-                        className="rounded bg-brand-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-700"
+                        className="rounded-lg border border-surface-300 bg-surface-100 px-4 py-2 text-xs font-semibold text-surface-300 hover:text-white hover:bg-surface-200 transition-colors"
                     >
-                        Go to Dashboard
+                        Case Directory
+                    </Link>
+                    <Link
+                        to="/intake"
+                        className="rounded-lg bg-insignia-500 hover:bg-insignia-400 text-surface-0 px-4 py-2 text-xs font-bold transition-all shadow-md shadow-insignia-500/20 cursor-pointer"
+                    >
+                        Run Pipeline
                     </Link>
                 </div>
             </nav>
 
             {/* ── Hero ────────────────────────────────── */}
-            <section className="relative overflow-hidden pt-12 pb-24 lg:pt-20 lg:pb-32 bg-gradient-to-b from-brand-50/50 to-surface-0">
-                <div className="absolute inset-0 z-0 opacity-40 mix-blend-multiply">
+            <section className="relative overflow-hidden pt-12 pb-24 lg:pt-20 lg:pb-32 bg-radial from-surface-50/80 to-surface-0">
+                {/* 3D Neural Hero Background */}
+                <div className="absolute inset-0 z-0 opacity-75">
                     <Suspense fallback={null}>
                         <HeroScene />
                     </Suspense>
                 </div>
 
-                <div className="relative z-10 mx-auto max-w-[1200px] px-6 lg:flex lg:items-center lg:gap-12">
+                {/* Tactical grid background overlay */}
+                <div className="absolute inset-0 bg-tactical-grid opacity-15 pointer-events-none" />
+
+                <div className="relative z-10 mx-auto max-w-7xl px-6 lg:flex lg:items-center lg:gap-12">
                     <div className="max-w-2xl lg:w-1/2">
-                        <motion.h1
+                        {/* Domain Tag */}
+                        <motion.div
                             initial="hidden"
                             animate="visible"
                             variants={fadeUp}
                             custom={0}
-                            className="text-4xl font-extrabold leading-[1.1] tracking-tight text-surface-900 sm:text-5xl lg:text-6xl"
+                            className="inline-flex items-center gap-2 rounded-full border border-insignia-500/30 bg-insignia-500/10 px-3 py-1 text-xs font-mono font-bold text-insignia-400 mb-6"
                         >
-                            Advanced Data Analytics & <span className="text-brand-600">Graph Intelligence.</span>
+                            <span className="h-2 w-2 rounded-full bg-insignia-400 animate-pulse" />
+                            <span>Criminal Network & Syndicate Analysis</span>
+                        </motion.div>
+
+                        <motion.h1
+                            initial="hidden"
+                            animate="visible"
+                            variants={fadeUp}
+                            custom={1}
+                            className="text-4xl font-black leading-[1.12] tracking-tight text-surface-900 sm:text-5xl lg:text-6xl"
+                        >
+                            Tactical Graph Intelligence for{" "}
+                            <span className="text-insignia-400">Organized Crime Cells.</span>
                         </motion.h1>
 
                         <motion.p
                             initial="hidden"
                             animate="visible"
                             variants={fadeUp}
-                            custom={1}
-                            className="mt-6 text-lg leading-relaxed text-surface-700 sm:text-xl"
+                            custom={2}
+                            className="mt-6 text-base leading-relaxed text-surface-600 sm:text-lg"
                         >
-                            A scalable platform to automatically analyze structured and unstructured data, map connections, and visualize complex networks for enterprise intelligence.
+                            Autonomous multi-modality evidence ingestion, entity de-duplication, and GNN link prediction. Purpose-built for state police cyber cells to reconstruct syndicate operations while preserving strict evidentiary chain-of-custody.
                         </motion.p>
 
+                        {/* EXACTLY TWO PRIMARY CTAs (Document Requirement) */}
                         <motion.div
                             initial="hidden"
                             animate="visible"
                             variants={fadeUp}
-                            custom={2}
+                            custom={3}
                             className="mt-8 flex flex-wrap items-center gap-4"
                         >
+                            {/* CTA 1: Primary Amber */}
+                            <Link
+                                to="/intake"
+                                className="flex items-center gap-2 rounded-xl bg-insignia-500 px-7 py-3.5 text-sm font-extrabold text-surface-0 shadow-lg shadow-insignia-500/25 transition-all hover:bg-insignia-400 hover:shadow-insignia-500/35 cursor-pointer"
+                            >
+                                <Icon name="radar" size={16} />
+                                <span>Run New Analysis</span>
+                            </Link>
+
+                            {/* CTA 2: Secondary Outlined */}
                             <Link
                                 to="/dashboard"
-                                className="rounded bg-brand-600 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700"
+                                className="flex items-center gap-2 rounded-xl border border-surface-300 bg-surface-100/90 px-7 py-3.5 text-sm font-bold text-surface-200 shadow-sm transition-all hover:bg-surface-200 hover:border-surface-400 cursor-pointer"
                             >
-                                Access Platform
+                                <Icon name="folder" size={16} />
+                                <span>View Case History</span>
                             </Link>
+                        </motion.div>
+
+                        {/* One-Line Trust Strip (Document Requirement) */}
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            variants={fadeUp}
+                            custom={4}
+                            className="mt-8 pt-6 border-t border-surface-200/60 flex items-center gap-2 text-xs font-mono text-surface-400"
+                        >
+                            <Icon name="shield" size={14} className="text-insignia-400 shrink-0" />
+                            <span>BSA 2023-aligned • DPDP-compliant • On-prem deployable</span>
                         </motion.div>
                     </div>
 
+                    {/* Right Hero Image Card */}
                     <motion.div
                         initial={{ opacity: 0, x: 40 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
                         className="mt-16 lg:mt-0 lg:w-1/2"
                     >
-                        <div className="relative rounded-2xl bg-white shadow-2xl ring-1 ring-surface-200/50">
+                        <div className="relative rounded-2xl bg-surface-100 border border-surface-300/80 p-2 shadow-2xl">
                             <img
                                 src={dashboardImage}
-                                alt="Dashboard Mockup"
-                                className="w-full rounded-2xl object-cover"
+                                alt="AstraX Tactical Dashboard"
+                                className="w-full rounded-xl object-cover border border-surface-300"
                             />
 
-                            {/* Decorative elements */}
-                            <div className="absolute -left-8 top-1/4 hidden rounded-lg border border-surface-200 bg-white p-4 shadow-lg sm:block w-48">
-                                <div className="mb-2 flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold">Node</div>
-                                    <div>
-                                        <div className="h-2 w-16 rounded bg-surface-200"></div>
-                                        <div className="mt-1 h-1.5 w-10 rounded bg-surface-100"></div>
-                                    </div>
+                            {/* Tactical Callout Pill */}
+                            <div className="absolute -left-6 top-1/3 hidden rounded-xl border border-insignia-500/40 bg-surface-100/95 backdrop-blur-md p-3.5 shadow-2xl sm:block w-52 font-mono">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-insignia-400 animate-ping" />
+                                    <span className="text-[11px] font-bold text-insignia-300 uppercase">
+                                        Active Linkage
+                                    </span>
                                 </div>
-                                <div className="h-1.5 w-full rounded bg-surface-100 mt-3"></div>
-                                <div className="h-1.5 w-2/3 rounded bg-surface-100 mt-1"></div>
+                                <div className="text-xs font-bold text-surface-900">Apex Logistics LLC</div>
+                                <div className="text-[10px] text-surface-500 mt-0.5">Hidden Owner: 92% Match</div>
                             </div>
                         </div>
                     </motion.div>
                 </div>
             </section>
 
-            {/* ── Marquee (Tech Buzzwords) ────────── */}
-            <section className="border-y border-surface-200 bg-surface-50 py-12 overflow-hidden">
+            {/* ── Marquee Strip ────────── */}
+            <section className="border-y border-surface-200/80 bg-surface-50 py-4 overflow-hidden">
                 <div className="relative flex w-full overflow-hidden">
-                    <div className="animate-marquee flex whitespace-nowrap items-center text-xl font-bold text-surface-400 uppercase tracking-widest">
-                        <span className="mx-8">Advanced Graph Analytics</span>
-                        <span className="mx-8">•</span>
-                        <span className="mx-8">Real-Time Processing</span>
-                        <span className="mx-8">•</span>
-                        <span className="mx-8">Scalable Architecture</span>
-                        <span className="mx-8">•</span>
-                        <span className="mx-8">Enterprise Security</span>
-                        <span className="mx-8">•</span>
-                        <span className="mx-8">Advanced Graph Analytics</span>
-                        <span className="mx-8">•</span>
-                        <span className="mx-8">Real-Time Processing</span>
-                        <span className="mx-8">•</span>
-                        <span className="mx-8">Scalable Architecture</span>
-                        <span className="mx-8">•</span>
-                        <span className="mx-8">Enterprise Security</span>
-                        <span className="mx-8">•</span>
+                    <div className="animate-marquee flex whitespace-nowrap items-center text-xs font-mono font-bold text-surface-400 uppercase tracking-widest">
+                        <span className="mx-6 text-insignia-400">BNS Statutory Taxonomy</span>
+                        <span className="mx-6">•</span>
+                        <span className="mx-6">Graph Neural Network Link Prediction</span>
+                        <span className="mx-6">•</span>
+                        <span className="mx-6 text-emerald-400">NAFIS Biometric Fingerprint Integration</span>
+                        <span className="mx-6">•</span>
+                        <span className="mx-6">GBM Financial Structuring Anomaly Detection</span>
+                        <span className="mx-6">•</span>
+                        <span className="mx-6 text-purple-400">Wasabi Crypto Mixer Peel-Chain Cluster</span>
+                        <span className="mx-6">•</span>
+                        <span className="mx-6">BNS Statutory Taxonomy</span>
+                        <span className="mx-6">•</span>
+                        <span className="mx-6">Graph Neural Network Link Prediction</span>
                     </div>
                 </div>
             </section>
 
-            {/* ── The Problem We Solve ───────────────── */}
-            <section className="py-24 bg-white">
-                <div className="mx-auto max-w-[1200px] px-6">
+            {/* ── Problem Section ───────────────── */}
+            <section className="py-24 bg-surface-0">
+                <div className="mx-auto max-w-7xl px-6">
                     <motion.div
                         initial="hidden"
                         whileInView="visible"
@@ -218,22 +219,25 @@ export default function Landing() {
                         custom={0}
                         className="mb-16 max-w-3xl"
                     >
+                        <div className="text-xs font-mono font-bold text-insignia-400 uppercase tracking-widest mb-2">
+                            The Fragmentation Bottleneck
+                        </div>
                         <h2 className="text-3xl font-extrabold tracking-tight text-surface-900 sm:text-4xl">
-                            The Challenge of Fragmented Data
+                            Modern Syndicates Operate in Data Silos
                         </h2>
-                        <p className="mt-6 text-lg leading-relaxed text-surface-600">
-                            Modern data is increasingly vast and interconnected. Organizations operate through complex networks involving associates, intermediaries, financial channels, and diverse locations.
+                        <p className="mt-6 text-base leading-relaxed text-surface-600">
+                            Organized criminal networks intentionally split communications across disposable VoIP carriers, route payments below statutory reporting thresholds, and hide beneficial ownership behind layered corporate fronts.
                         </p>
-                        <p className="mt-4 text-lg leading-relaxed text-surface-600">
-                            While teams collect vast volumes of data from documents, logs, and public media, this information is highly fragmented. Manual analysis is labor-intensive, slow, and prone to missing the critical links that connect the dots.
+                        <p className="mt-4 text-base leading-relaxed text-surface-600">
+                            While investigative agencies gather gigabytes of evidence from seized devices, tower pings, and bank statements, manual analysis across unintegrated portals produces investigative paralysis. AstraX bridges this gap by unifying isolated evidence channels into an active, evidence-backed knowledge graph.
                         </p>
                     </motion.div>
                 </div>
             </section>
 
             {/* ── Features ────────────────────────────── */}
-            <section className="py-24 bg-surface-50">
-                <div className="mx-auto max-w-[1200px] px-6">
+            <section className="py-24 bg-surface-50 border-t border-surface-200/80">
+                <div className="mx-auto max-w-7xl px-6">
                     <motion.div
                         initial="hidden"
                         whileInView="visible"
@@ -243,14 +247,14 @@ export default function Landing() {
                         className="mb-16 text-center max-w-3xl mx-auto"
                     >
                         <h2 className="text-3xl font-extrabold tracking-tight text-surface-900 sm:text-4xl">
-                            A unified analytical ecosystem
+                            A Unified Tactical Analytical Ecosystem
                         </h2>
-                        <p className="mt-4 text-lg text-surface-600">
-                            Leveraging AI, Machine Learning, and Graph Analytics to assist teams in mapping complex networks.
+                        <p className="mt-4 text-base text-surface-600">
+                            Engineered for high information density, strict evidentiary provenance, and accelerated prosecutorial briefs.
                         </p>
                     </motion.div>
 
-                    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         {features.map((f, i) => (
                             <motion.div
                                 key={f.title}
@@ -259,22 +263,22 @@ export default function Landing() {
                                 viewport={{ once: true, margin: "-50px" }}
                                 variants={fadeUp}
                                 custom={i}
-                                className="group rounded-xl bg-white p-8 shadow-sm ring-1 ring-surface-200 transition hover:shadow-md"
+                                className="rounded-xl bg-surface-100 border border-surface-300 p-8 shadow-sm transition-all hover:border-insignia-500/40 hover:bg-surface-100/90"
                             >
-                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                                    {f.icon}
+                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-insignia-500/15 border border-insignia-500/30 text-insignia-400">
+                                    <Icon name={f.icon} size={22} />
                                 </div>
-                                <h3 className="text-xl font-bold text-surface-900">{f.title}</h3>
-                                <p className="mt-3 leading-relaxed text-surface-600">{f.desc}</p>
+                                <h3 className="text-lg font-bold text-surface-900">{f.title}</h3>
+                                <p className="mt-3 text-sm leading-relaxed text-surface-600">{f.desc}</p>
                             </motion.div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* ── Visual Insights Section ───────────────── */}
-            <section className="py-24 bg-white">
-                <div className="mx-auto max-w-[1200px] px-6 lg:flex lg:items-center lg:gap-16">
+            {/* ── Visual Insight Section ───────────────── */}
+            <section className="py-24 bg-surface-0 border-t border-surface-200/80">
+                <div className="mx-auto max-w-7xl px-6 lg:flex lg:items-center lg:gap-16">
                     <motion.div
                         initial={{ opacity: 0, x: -40 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -282,11 +286,11 @@ export default function Landing() {
                         transition={{ duration: 0.8, ease: "easeOut" }}
                         className="lg:w-1/2"
                     >
-                        <div className="overflow-hidden rounded-2xl shadow-xl ring-1 ring-surface-200">
+                        <div className="overflow-hidden rounded-2xl border border-surface-300 shadow-2xl bg-surface-100 p-2">
                             <img
                                 src={graphImage}
                                 alt="Network Graph Visualization"
-                                className="w-full object-cover"
+                                className="w-full rounded-xl object-cover border border-surface-300"
                             />
                         </div>
                     </motion.div>
@@ -300,50 +304,46 @@ export default function Landing() {
                         className="mt-12 lg:mt-0 lg:w-1/2"
                     >
                         <h2 className="text-3xl font-extrabold tracking-tight text-surface-900 sm:text-4xl">
-                            Identify Key Nodes Instantly
+                            Transparent Link Probabilities — Leads Not Verdicts
                         </h2>
-                        <p className="mt-6 text-lg leading-relaxed text-surface-600">
-                            Our system doesn't just extract data—it understands it. By detecting patterns and unusual activities across fragmented datasets, we provide actionable, visual intelligence for complex analysis.
+                        <p className="mt-6 text-base leading-relaxed text-surface-600">
+                            Every AI-derived prediction in AstraX is accompanied by plain-language qualifiers and interactive source citations. Hypotheses remain clearly distinguished from confirmed forensic evidence.
                         </p>
 
-                        <ul className="mt-8 space-y-4">
-                            <li className="flex items-start gap-3">
-                                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600">
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                </div>
+                        <div className="mt-8 space-y-4 font-mono text-xs">
+                            <div className="flex items-start gap-3 rounded-lg border border-surface-300 bg-surface-100 p-3">
+                                <span className="h-2 w-2 rounded-full bg-emerald-400 mt-1" />
                                 <div>
-                                    <h4 className="font-bold text-surface-900">Pattern Detection</h4>
-                                    <p className="text-surface-600">Flag unusual transactions and communications automatically.</p>
+                                    <strong className="text-surface-900 block">Confirmed Evidentiary Basis</strong>
+                                    <span className="text-surface-500">KYC mandates, NAFIS prints, and banking UTR records.</span>
                                 </div>
-                            </li>
+                            </div>
 
-                            <li className="flex items-start gap-3">
-                                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600">
-                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                </div>
+                            <div className="flex items-start gap-3 rounded-lg border border-purple-500/40 bg-purple-950/20 border-dashed p-3">
+                                <span className="h-2 w-2 rounded-full bg-purple-400 mt-1" />
                                 <div>
-                                    <h4 className="font-bold text-surface-900">Actionable Intelligence</h4>
-                                    <p className="text-surface-600">Generate insights to help untangle complex networks effectively.</p>
+                                    <strong className="text-purple-300 block">Probabilistic GNN Hypotheses</strong>
+                                    <span className="text-surface-500">Unconfirmed links tagged with confidence intervals for further human inquiry.</span>
                                 </div>
-                            </li>
-                        </ul>
+                            </div>
+                        </div>
                     </motion.div>
                 </div>
             </section>
 
             {/* ── Footer ──────────────────────────────── */}
-            <footer className="bg-surface-900 py-12 text-surface-400">
-                <div className="mx-auto max-w-[1200px] px-6 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center">
-                    <div className="flex items-center gap-2 mb-4 sm:mb-0">
-                        <div className="flex h-6 w-6 items-center justify-center rounded bg-surface-700">
-                            <svg className="h-3.5 w-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                            </svg>
+            <footer className="border-t border-surface-200/80 bg-surface-50 py-12 text-surface-500 text-xs">
+                <div className="mx-auto max-w-7xl px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-insignia-500/15 border border-insignia-500/30 text-insignia-400">
+                            <Icon name="shield" size={14} />
                         </div>
-                        <span className="text-sm font-semibold text-white">AstraX</span>
+                        <span className="font-extrabold text-surface-900 text-sm tracking-tight">AstraX</span>
+                        <span className="font-mono text-[11px] text-surface-400">| SIH26189 Official Command Suite</span>
                     </div>
-                    <p className="text-sm">
-                        &copy; {new Date().getFullYear()} Advanced Intelligence Platform.
+
+                    <p className="font-mono">
+                        Designed for State Police Cyber Crime Cells • Air-Gapped / On-Prem Architecture
                     </p>
                 </div>
             </footer>

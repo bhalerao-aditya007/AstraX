@@ -1,5 +1,6 @@
+// src/components/layout/Workspace.tsx
 import { useEffect, useState } from "react";
-
+import { Link } from "react-router-dom";
 import { useDocumentsStore } from "../../store/documentsStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { useCasesStore } from "../../store/casesStore";
@@ -7,9 +8,12 @@ import type { Document } from "../../services/documents";
 
 import DocumentList from "../documents/DocumentList";
 import UploadDocument from "../upload/UploadDocument";
-import KnowledgeGraph from "../dashboard/KnowledgeGraph";
+import NetworkGraph from "../dashboard/analytics/NetworkGraph";
+import FactSheet from "../summary/FactSheet";
+import TrackBadge from "../ui/TrackBadge";
 import Loader from "../ui/Loader";
-import Button from "../ui/Button";
+import Icon from "../ui/Icon";
+import { mockFactSheet, mockFinancialTracing } from "../../data/mockCaseData";
 
 export default function Workspace() {
     const selectedCaseId = useWorkspaceStore((state) => state.selectedCaseId);
@@ -35,74 +39,160 @@ export default function Workspace() {
 
     if (!selectedCaseId) {
         return (
-            <main className="flex min-w-0 flex-1 items-center justify-center bg-surface-50 p-6">
-                <div className="text-center rounded-xl border border-surface-200 bg-white p-12 shadow-sm">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-surface-100">
-                        <svg className="h-7 w-7 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-                        </svg>
+            <main className="flex min-w-0 flex-1 items-center justify-center bg-surface-0 p-6">
+                <div className="text-center rounded-2xl border border-surface-300 bg-surface-100 p-12 shadow-xl max-w-md">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-200 border border-surface-300 text-surface-400">
+                        <Icon name="folder" size={26} />
                     </div>
-                    <h1 className="text-lg font-bold text-surface-800">Select a case</h1>
-                    <p className="mt-1 text-sm text-surface-500">Choose a case from the sidebar to view its details.</p>
+                    <h2 className="text-lg font-bold text-surface-900">
+                        Select an Operational Case
+                    </h2>
+                    <p className="mt-2 text-xs text-surface-500 leading-relaxed font-mono">
+                        Choose a case from the sidebar directory to view its evidentiary files, summary fact-sheet, and topological overview.
+                    </p>
+                    <Link
+                        to="/intake"
+                        className="mt-6 inline-flex items-center gap-2 rounded-lg bg-insignia-500 hover:bg-insignia-400 text-surface-0 font-bold px-4 py-2 text-xs transition-colors shadow"
+                    >
+                        <Icon name="plus" size={13} />
+                        <span>Initiate New Evidence Intake</span>
+                    </Link>
                 </div>
             </main>
         );
     }
 
+    const isTrack2 = (selectedCase?.track ?? 2) === 2;
+
     return (
         <>
-            <main className="min-w-0 flex-1 overflow-y-auto bg-surface-50 p-6 lg:p-8 space-y-6">
-                
-                {/* ── Case Summary Card ─────────── */}
-                <div className="rounded-xl border border-surface-200 bg-white p-6 shadow-sm">
-                    <div className="mb-4 flex items-start justify-between gap-4">
-                        <div>
-                            <h1 className="text-xl font-bold text-surface-900">
-                                {selectedCase?.name ?? "Case Workspace"}
-                            </h1>
-                            {!isLoading && !error && (
-                                <p className="mt-1 text-sm text-surface-500">
-                                    {documents.length} {documents.length === 1 ? "document" : "documents"}
-                                </p>
-                            )}
+            <main className="min-w-0 flex-1 overflow-y-auto bg-surface-0 p-6 lg:p-8 space-y-6">
+                {/* ── Case Metadata & Action Header ─────────── */}
+                <div className="rounded-xl border border-surface-300 bg-surface-100 p-6 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-xl font-bold text-surface-900 tracking-tight">
+                                    {selectedCase?.name ?? "Case Workspace"}
+                                </h1>
+                                <TrackBadge
+                                    track={(selectedCase?.track as 1 | 2) || 2}
+                                    triageReason={selectedCase?.triage_reason}
+                                />
+                            </div>
+                            <div className="flex items-center gap-4 text-xs font-mono text-surface-500">
+                                <span>
+                                    {documents.length} {documents.length === 1 ? "document" : "documents on file"}
+                                </span>
+                                <span>•</span>
+                                <span>Version {selectedCase?.version || 1}.0</span>
+                            </div>
                         </div>
+
+                        {/* Open Full Dashboard CTA for Track 2 */}
+                        {isTrack2 && (
+                            <Link
+                                to={`/cases/${selectedCaseId}`}
+                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-insignia-500 hover:bg-insignia-400 text-surface-0 font-bold px-5 py-2.5 text-xs transition-all shadow-md shadow-insignia-500/20 cursor-pointer shrink-0"
+                            >
+                                <Icon name="radar" size={14} />
+                                <span>Open Full Analysis Workspace</span>
+                                <Icon name="arrow-right" size={14} />
+                            </Link>
+                        )}
                     </div>
                     
-                    <div className="text-sm text-surface-600 space-y-3">
-                        <p>This case investigates potential irregularities flagged during routine compliance checks. Initial analysis indicates overlapping financial transactions and communications among several unverified entities.</p>
-                        <p>Our document extraction pipeline has processed the uploaded files to automatically identify individuals, organizations, and financial accounts. Analysts should review the highlighted relationships to determine if further action is required.</p>
-                        <p>Please note that some documents may still be pending manual review or OCR processing. You can track the status of individual files in the documents list below.</p>
-                        <p>The interactive knowledge graph provides a real-time visualization of all extracted connections. Use it to trace fund flows and communication networks across the entire case.</p>
+                    <p className="text-xs text-surface-600 leading-relaxed mt-4 pt-4 border-t border-surface-200">
+                        {selectedCase?.triage_reason ||
+                            "This case investigates organized financial and telecommunication irregularities. Multi-modality pipelines correlate extracted entities across banking ledgers and surveillance records."}
+                    </p>
+                </div>
+
+                {/* ── Network Graph Slim Preview (Unified Graph) ──────────── */}
+                <div className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-surface-900 flex items-center gap-2">
+                                <Icon name="network-graph" size={15} className="text-insignia-400" />
+                                <span>Case Knowledge Graph Preview</span>
+                            </h3>
+                            <p className="text-xs text-surface-500 mt-0.5">
+                                Real-time topological rendering of primary suspect interactions.
+                            </p>
+                        </div>
+                        {isTrack2 && (
+                            <Link
+                                to={`/cases/${selectedCaseId}#knowledge-graph`}
+                                className="text-xs font-mono text-insignia-400 hover:underline"
+                            >
+                                Full Screen Interactive Graph →
+                            </Link>
+                        )}
+                    </div>
+
+                    <div className="h-[360px] w-full">
+                        <NetworkGraph
+                            data={mockFinancialTracing}
+                            theme="digital"
+                            showControls={false}
+                        />
                     </div>
                 </div>
 
-                {/* ── Knowledge Graph ──────────── */}
-                <KnowledgeGraph />
-
                 {/* ── Documents List ────────────────── */}
-                <div className="rounded-xl border border-surface-200 bg-white p-6 shadow-sm">
+                <div className="rounded-xl border border-surface-300 bg-surface-100 p-6 shadow-sm">
                     <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-sm font-bold uppercase tracking-wider text-surface-700">
-                            Documents
-                        </h2>
-                        <Button variant="primary" size="sm" onClick={() => setShowUpload(true)}>
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
-                            Upload
-                        </Button>
+                        <div>
+                            <h2 className="text-sm font-bold uppercase tracking-wider text-surface-900">
+                                Case Evidence Files
+                            </h2>
+                            <p className="text-xs text-surface-500 mt-0.5 font-mono">
+                                Uploaded digital and scanned exhibits
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowUpload(true)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-insignia-500 hover:bg-insignia-400 text-surface-0 font-bold px-3 py-1.5 text-xs transition-colors shadow"
+                        >
+                            <Icon name="upload" size={13} />
+                            <span>Upload Exhibit</span>
+                        </button>
                     </div>
 
-                    {isLoading && <Loader label="Loading documents…" />}
+                    {isLoading && <Loader label="Loading exhibits…" />}
 
                     {error && !isLoading && (
-                        <div className="rounded-xl border border-surface-200 bg-surface-50 p-6">
-                            <p className="text-sm text-red-600">{error}</p>
-                            <button type="button" onClick={() => fetchDocuments(selectedCaseId)} className="mt-2 text-xs text-surface-500 underline hover:text-surface-700">Retry</button>
+                        <div className="rounded-xl border border-surface-300 bg-surface-0 p-6">
+                            <p className="text-sm text-red-400 font-mono">{error}</p>
+                            <button
+                                type="button"
+                                onClick={() => fetchDocuments(selectedCaseId)}
+                                className="mt-2 text-xs text-surface-400 underline hover:text-white"
+                            >
+                                Retry
+                            </button>
                         </div>
                     )}
 
                     {!isLoading && !error && (
                         <DocumentList documents={documents} />
                     )}
+                </div>
+
+                {/* ── Persistent Embedded Fact Sheet (Document Requirement §3.7) ────────── */}
+                <div className="pt-2">
+                    <FactSheet
+                        data={{
+                            ...mockFactSheet,
+                            caseId: selectedCase.id,
+                            firNumber: selectedCase.name,
+                            track: (selectedCase.track ?? 2) as 1 | 2,
+                            triageReason: selectedCase.triage_reason || mockFactSheet.triageReason,
+                        }}
+                        caseId={selectedCase.id}
+                        isEmbedded={true}
+                    />
                 </div>
             </main>
 

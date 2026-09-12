@@ -124,7 +124,7 @@ export default function UploadDocument({
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="e.g. Police Incident Report"
                         disabled={isUploading}
-                        className="w-full rounded-lg border border-surface-300 bg-surface-0 px-3 py-2 text-sm text-surface-900 placeholder-surface-400 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
+                        className="w-full rounded-lg border border-surface-300 bg-surface-200 px-3 py-2 text-sm text-surface-900 placeholder-surface-500 outline-none focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 disabled:opacity-50"
                     />
                 </div>
 
@@ -139,46 +139,46 @@ export default function UploadDocument({
                         placeholder="Brief description of the document"
                         rows={2}
                         disabled={isUploading}
-                        className="w-full resize-none rounded-lg border border-surface-300 bg-surface-0 px-3 py-2 text-sm text-surface-900 placeholder-surface-400 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
+                        className="w-full resize-none rounded-lg border border-surface-300 bg-surface-200 px-3 py-2 text-sm text-surface-900 placeholder-surface-500 outline-none focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 disabled:opacity-50"
                     />
                 </div>
 
                 <div>
                     <label htmlFor="doc-type" className="mb-1.5 block text-sm font-medium text-surface-700">
-                        Document Type <span className="text-red-500">*</span>
+                        Document Type <span className="text-rose-500">*</span>
                     </label>
                     <select
                         id="doc-type"
                         value={documentType}
                         onChange={(e) => setDocumentType(e.target.value as DocumentType)}
                         disabled={isUploading}
-                        className="w-full rounded-lg border border-surface-300 bg-surface-0 px-3 py-2 text-sm text-surface-900 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
+                        className="w-full rounded-lg border border-surface-300 bg-surface-200 px-3 py-2 text-sm text-surface-900 outline-none focus:border-amber-500/80 focus:ring-2 focus:ring-amber-500/20 disabled:opacity-50"
                     >
                         {DOCUMENT_TYPES.map((dt) => (
-                            <option key={dt.value} value={dt.value}>{dt.label}</option>
+                            <option key={dt.value} value={dt.value} className="bg-surface-100 text-surface-900">{dt.label}</option>
                         ))}
                     </select>
                 </div>
 
                 <div>
                     <label className="mb-1.5 block text-sm font-medium text-surface-700">
-                        File <span className="text-red-500">*</span>
+                        File <span className="text-rose-500">*</span>
                     </label>
                     <div
                         onClick={() => !isUploading && fileInputRef.current?.click()}
-                        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-surface-300 px-4 py-6 text-center transition hover:border-brand-400 hover:bg-brand-50/30 ${isUploading ? "cursor-not-allowed opacity-50" : ""}`}
+                        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-surface-300 bg-surface-200/50 px-4 py-6 text-center transition hover:border-amber-400/50 hover:bg-amber-500/5 ${isUploading ? "cursor-not-allowed opacity-50" : ""}`}
                     >
                         {file ? (
                             <>
-                                <p className="text-sm font-medium text-surface-700">{file.name}</p>
-                                <p className="mt-0.5 text-xs text-surface-400">{(file.size / 1024).toFixed(1)} KB</p>
+                                <p className="text-sm font-medium text-surface-200 font-mono">{file.name}</p>
+                                <p className="mt-0.5 text-xs text-surface-400 font-mono">{(file.size / 1024).toFixed(1)} KB</p>
                             </>
                         ) : (
                             <>
                                 <svg className="mb-2 h-6 w-6 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                                 </svg>
-                                <p className="text-sm text-surface-500">Click to select a file</p>
+                                <p className="text-xs font-mono text-surface-400">Click to select evidentiary file</p>
                             </>
                         )}
                     </div>

@@ -45,7 +45,7 @@ export default function UploadProgress({
     const currentIndex = stageOrder.indexOf(stage);
 
     return (
-        <div className="mt-4 rounded-lg border border-surface-200 bg-surface-50 p-4">
+        <div className="mt-4 rounded-lg border border-surface-300 bg-surface-200 p-4">
             {/* Step indicators */}
             <div className="mb-4 flex items-center gap-2">
                 {stageOrder.map((s, i) => {
@@ -56,14 +56,14 @@ export default function UploadProgress({
                     return (
                         <div key={s} className="flex items-center gap-2">
                             <div
-                                className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold transition-all ${
+                                className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-mono font-bold transition-all ${
                                     isError
-                                        ? "bg-red-500 text-white"
+                                        ? "bg-rose-500 text-white"
                                         : isDone
-                                          ? "bg-green-500 text-white"
+                                          ? "bg-emerald-500 text-surface-0 font-bold"
                                           : isCurrent
-                                            ? "border-2 border-brand-500 bg-transparent text-brand-600"
-                                            : "border border-surface-300 bg-transparent text-surface-400"
+                                            ? "border-2 border-amber-400 bg-transparent text-amber-400"
+                                            : "border border-surface-400 bg-transparent text-surface-500"
                                 }`}
                             >
                                 {isDone ? "✓" : i + 1}
@@ -73,8 +73,8 @@ export default function UploadProgress({
                                 <div
                                     className={`h-px w-4 ${
                                         isDone
-                                            ? "bg-green-400"
-                                            : "bg-surface-300"
+                                            ? "bg-emerald-500/50"
+                                            : "bg-surface-400/40"
                                     }`}
                                 />
                             )}
@@ -84,12 +84,12 @@ export default function UploadProgress({
             </div>
 
             <p
-                className={`text-sm font-semibold ${
+                className={`text-xs font-mono ${
                     stage === "error"
-                        ? "text-red-600"
+                        ? "text-rose-400"
                         : stage === "done"
-                          ? "text-green-600"
-                          : "text-surface-700"
+                          ? "text-emerald-400"
+                          : "text-surface-200"
                 }`}
             >
                 {stage === "error" && error ? error : stageLabels[stage]}
@@ -97,19 +97,19 @@ export default function UploadProgress({
 
             {stage !== "done" && stage !== "error" && (
                 <div className="mt-2 flex items-center gap-2">
-                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-surface-300 border-t-brand-600" />
-                    <span className="text-xs text-surface-500">In progress</span>
+                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-surface-300 border-t-amber-400" />
+                    <span className="text-xs font-mono text-surface-400">Processing stream...</span>
                 </div>
             )}
 
             {stage === "done" && document && (
                 <div className="mt-3">
-                    <p className="text-xs text-surface-500">
-                        <span className="font-medium text-surface-700">
+                    <p className="text-xs font-mono text-surface-400">
+                        <span className="font-semibold text-surface-200">
                             {document.title}
                         </span>{" "}
-                        has been uploaded. Status:{" "}
-                        <span className="font-medium text-surface-700">
+                        ingested into evidentiary archive. Status:{" "}
+                        <span className="text-emerald-400 font-semibold uppercase">
                             {document.status}
                         </span>
                     </p>
@@ -117,9 +117,9 @@ export default function UploadProgress({
                     <button
                         type="button"
                         onClick={onDone}
-                        className="mt-3 rounded-lg bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-brand-700"
+                        className="mt-3 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-bold text-surface-0 hover:bg-amber-400 transition shadow"
                     >
-                        Done
+                        Acknowledge
                     </button>
                 </div>
             )}
