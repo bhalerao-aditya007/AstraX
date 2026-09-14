@@ -56,6 +56,7 @@ interface DeltaIngestionModalProps {
 }
 
 export default function DeltaIngestionModal({
+    caseId,
     isOpen,
     onClose,
     onDeltaComplete,

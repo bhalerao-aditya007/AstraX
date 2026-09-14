@@ -169,28 +169,31 @@ export function normalizeCrimeTheory(t: any, idx = 0): CrimeTheory {
 }
 
 export function normalizeMOMatch(m: any, idx = 0): MOMatch {
-    const sim = m.overallSimilarity ?? m.similarity_score ?? 0.8;
+    const sim = typeof m.overallSimilarity === "number"
+        ? m.overallSimilarity
+        : typeof m.similarity_score === "number"
+        ? m.similarity_score
+        : 0.84;
     return {
         id: m.id || m.case_id || `mo-${idx + 1}`,
-        matchedCaseId: m.matchedCaseId || m.case_id || `FIR-MATCH-${idx + 1}`,
+        matchedCaseId: m.matchedCaseId || m.case_id || `FIR ${100 + idx}/2025`,
+        title: m.title || m.summary || `Pattern Linkage: Case ${m.case_id || idx + 1}`,
+        jurisdiction: m.jurisdiction || "Special Cell / Cyber Crime",
+        dateReported: m.dateReported || "2025-11-20",
         overallSimilarity: sim,
-        status: m.status || (sim >= 0.8 ? "Active Linkage" : "Investigative Lead"),
-        confidence: sim,
-        dimensionScores: m.dimensionScores || {
-            geospatial: 0.85,
-            temporal: 0.78,
-            modusOperandi: 0.88,
-            signature: 0.82,
-        },
-        modusOperandiSummary: m.modusOperandiSummary || (m.common_factors ? m.common_factors.join("; ") : "Corroborated vehicle theft / transit pattern."),
-        sharedPatterns: m.sharedPatterns || m.common_factors || ["Transit Bypass", "Burner Phone Relays"],
-        investigativeImplications: m.investigativeImplications || "Syndicate overlap suggests unified coordination.",
-        citation: m.citation || {
-            documentTitle: `State Crime Database (${m.case_id || "Archive"})`,
-            pageOrOffset: "CCTNS Record",
-            confidenceScore: sim,
-            rawSnippet: m.modusOperandiSummary || "Historical crime record match.",
-        },
+        geospatialSimilarity: m.geospatialSimilarity ?? m.dimensionScores?.geospatial ?? 0.85,
+        temporalSimilarity: m.temporalSimilarity ?? m.dimensionScores?.temporal ?? 0.78,
+        textSimilarity: m.textSimilarity ?? m.dimensionScores?.modusOperandi ?? 0.88,
+        commonFactors: Array.isArray(m.commonFactors)
+            ? m.commonFactors
+            : Array.isArray(m.common_factors)
+            ? m.common_factors
+            : ["Transit Bypass", "Burner Phone Relays"],
+        status: (m.status === "Active Linkage" || m.status === "Under Review" || m.status === "Dismissed")
+            ? m.status
+            : sim >= 0.85
+            ? "Active Linkage"
+            : "Under Review",
     };
 }
 

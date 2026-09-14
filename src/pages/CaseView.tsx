@@ -351,7 +351,7 @@ export default function CaseView() {
                                     ? liveReport.priority_leads.map((lead) => ({
                                           id: lead.entity_id,
                                           title: lead.display_name,
-                                          phantomType: "suspect" as const,
+                                          phantomType: "person" as const,
                                           confidenceScore: lead.score,
                                           status: "open" as const,
                                           dateIdentified: "Live Inference",
