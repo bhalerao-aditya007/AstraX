@@ -32,7 +32,16 @@ import {
     mockForensicEvidence,
     mockStructuringAlerts,
     mockAuditLog,
+    mockPhantomLeads,
+    mockTheories,
+    mockMOMatches,
 } from "../data/mockCaseData";
+import {
+    triggerHistoricalAnalysis,
+    getCaseGraph,
+    type GraphData,
+    type AnalysisReport,
+} from "../services/analytics";
 
 const SCROLLSPY_SECTIONS = [
     { id: "fact-sheet", label: "01. Fact Sheet", icon: "file-text" },
@@ -88,12 +97,44 @@ export default function CaseView() {
     const [showReasoningTrace, setShowReasoningTrace] = useState(false);
     const [isLeftRailOpen, setIsLeftRailOpen] = useState(true);
 
+    // Live AI Analysis State
+    const [liveReport, setLiveReport] = useState<AnalysisReport | null>(null);
+    const [liveGraph, setLiveGraph] = useState<GraphData | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
     const mainScrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (cases.length === 0) fetchCases();
-        if (caseId) fetchDocuments(caseId);
+        if (caseId) {
+            fetchDocuments(caseId);
+            getCaseGraph(caseId)
+                .then((g) => {
+                    if (g && g.nodes?.length > 0) setLiveGraph(g);
+                })
+                .catch(() => {});
+        }
     }, [caseId, cases.length, fetchCases, fetchDocuments]);
+
+    const handleRunAIAnalysis = async () => {
+        if (!caseId) return;
+        setIsAnalyzing(true);
+        try {
+            const [report, graph] = await Promise.all([
+                triggerHistoricalAnalysis(caseId),
+                getCaseGraph(caseId),
+            ]);
+            setLiveReport(report);
+            if (graph && graph.nodes?.length > 0) {
+                setLiveGraph(graph);
+            }
+            setDeltaDiffApplied(true);
+        } catch (err) {
+            console.error("Historical analysis error:", err);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
 
     const caseData = cases.find((c) => c.id === caseId) || {
         id: caseId || "case-1",
@@ -102,6 +143,22 @@ export default function CaseView() {
         triage_reason: "Multi-layered syndicate: 4 shell entities, Wasabi crypto mixer cluster, and international burner relays.",
         version: deltaDiffApplied ? 3 : 2,
     };
+
+    const liveIdentityData =
+        liveReport?.entities && liveReport.entities.length > 0
+            ? {
+                  target: caseData.name || "Primary Subject",
+                  candidates: liveReport.entities.map((e, idx) => ({
+                      id: e.id || `live-cand-${idx}`,
+                      name: e.name,
+                      confidence: 88,
+                      source: e.source || "Live AstraX NLP Pipeline",
+                      matchingAttributes: e.matchingAttributes || ["Identified in FIR extraction record"],
+                      conflictingAttributes: [] as string[],
+                      reasoning: `Extracted via AstraX live entity resolution pipeline for ${caseData.name}.`,
+                  })),
+              }
+            : undefined;
 
     // Scrollspy Intersection Observer
     useEffect(() => {
@@ -176,6 +233,17 @@ export default function CaseView() {
                                     <TrackBadge track={(caseData.track as 1 | 2) || 2} size="sm" />
                                 </div>
                             </div>
+
+                            {/* Run AI Case Reconstruction Button */}
+                            <button
+                                type="button"
+                                disabled={isAnalyzing}
+                                onClick={handleRunAIAnalysis}
+                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold px-3 py-2 text-xs transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                            >
+                                <Icon name="radar" size={14} />
+                                <span>{isAnalyzing ? "Synthesizing Models..." : "Run AI Case Reconstruction"}</span>
+                            </button>
 
                             {/* Add New Evidence Button (Delta Ingestion) */}
                             <button
@@ -267,7 +335,7 @@ export default function CaseView() {
                     {/* 1. FACT SHEET */}
                     <section id="fact-sheet" className="scroll-mt-4">
                         <FactSheet
-                            data={mockFactSheet}
+                            data={liveReport?.fact_sheet || mockFactSheet}
                             caseId={caseData.id}
                             isEmbedded={true}
                             showDiffIndicator={deltaDiffApplied}
@@ -278,6 +346,25 @@ export default function CaseView() {
                     {/* 2. INVESTIGATIVE LEAD BOARD */}
                     <section id="lead-board" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4">
                         <LeadBoard
+                            data={
+                                liveReport?.priority_leads && liveReport.priority_leads.length > 0
+                                    ? liveReport.priority_leads.map((lead) => ({
+                                          id: lead.entity_id,
+                                          title: lead.display_name,
+                                          phantomType: "suspect" as const,
+                                          confidenceScore: lead.score,
+                                          status: "open" as const,
+                                          dateIdentified: "Live Inference",
+                                          sourceDocument: "AstraX AI Historical Linker",
+                                          partialAttributes: {
+                                              gnn_probability: `${(lead.components.gnn_probability * 100).toFixed(1)}%`,
+                                              centrality: `${(lead.components.centrality * 100).toFixed(1)}%`,
+                                              mo_similarity: `${(lead.components.mo_similarity * 100).toFixed(1)}%`,
+                                          },
+                                          recommendedAction: "Verify cross-case linkage and cell tower overlaps",
+                                      }))
+                                    : mockPhantomLeads
+                            }
                             onSelectLead={(lead) => {
                                 setSelectedItem({
                                     id: lead.id,
@@ -318,7 +405,7 @@ export default function CaseView() {
 
                         <div className="h-[460px] w-full">
                             <NetworkGraph
-                                data={GNN_SYNTHESIZED_DATA}
+                                data={liveGraph || GNN_SYNTHESIZED_DATA}
                                 theme="digital"
                                 onNodeClick={(node) => setSelectedItem(node)}
                             />
@@ -478,17 +565,34 @@ export default function CaseView() {
 
                     {/* 10. IDENTITY RESOLUTION */}
                     <section id="identity-resolution" className="scroll-mt-4">
-                        <IdentityResolutionView onSelectCandidate={(cand) => setSelectedItem(cand)} />
+                        <IdentityResolutionView
+                            data={liveIdentityData}
+                            onSelectCandidate={(cand) => setSelectedItem(cand)}
+                        />
                     </section>
 
                     {/* 11. MO-SIMILARITY / SERIAL-CRIME MATCHES */}
                     <section id="mo-matches" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4">
-                        <MOMatchList />
+                        <MOMatchList
+                            data={
+                                liveReport?.mo_matches?.matched_historical_cases &&
+                                liveReport.mo_matches.matched_historical_cases.length > 0
+                                    ? liveReport.mo_matches.matched_historical_cases
+                                    : mockMOMatches
+                            }
+                        />
                     </section>
 
                     {/* 12. CRIME RECONSTRUCTION THEORIES */}
                     <section id="theories" className="scroll-mt-4">
-                        <TheoryBoard onJumpToLead={scrollToSection} />
+                        <TheoryBoard
+                            data={
+                                liveReport?.theories && liveReport.theories.length > 0
+                                    ? liveReport.theories
+                                    : mockTheories
+                            }
+                            onJumpToLead={scrollToSection}
+                        />
                     </section>
 
                     {/* 13. INVESTIGATIVE BRIEF */}

@@ -14,6 +14,7 @@ interface DocumentsState {
     fetchDocuments: (caseId: string) => Promise<void>;
     deleteDocument: (id: string) => Promise<void>;
     addDocument: (document: Document) => void;
+    updateDocument: (document: Document) => void;
 }
 
 export const useDocumentsStore = create<DocumentsState>((set) => ({
@@ -47,5 +48,13 @@ export const useDocumentsStore = create<DocumentsState>((set) => ({
 
     addDocument: (document: Document) => {
         set((state) => ({ documents: [...state.documents, document] }));
+    },
+
+    updateDocument: (document: Document) => {
+        set((state) => ({
+            documents: state.documents.map((d) =>
+                d.id === document.id ? document : d
+            ),
+        }));
     },
 }));

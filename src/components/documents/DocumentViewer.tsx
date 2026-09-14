@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 
 import type { Document } from "../../services/documents";
-import { getDownloadUrl } from "../../services/documents";
+import { getDownloadUrl, getDocument } from "../../services/documents";
+import { triggerModelForDocument } from "../../services/models";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import { useDocumentsStore } from "../../store/documentsStore";
 
@@ -17,6 +18,13 @@ const VIEWABLE_STATUSES = new Set(["success", "finish"]);
 export default function DocumentViewer({ document }: DocumentViewerProps) {
     const clearDocument = useWorkspaceStore((state) => state.clearDocument);
     const deleteFromStore = useDocumentsStore((state) => state.deleteDocument);
+    const updateStoreDocument = useDocumentsStore((state) => state.updateDocument);
+
+    const [currentDoc, setCurrentDoc] = useState<Document>(document);
+
+    useEffect(() => {
+        setCurrentDoc(document);
+    }, [document]);
 
     const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
     const [urlLoading, setUrlLoading] = useState(false);
@@ -27,6 +35,8 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
     const [descExpanded, setDescExpanded] = useState(false);
 
     const [isExtracting, setIsExtracting] = useState(false);
+    const [isModelRunning, setIsModelRunning] = useState(false);
+    const [modelStatusText, setModelStatusText] = useState<string | null>(null);
     const [displayedExtraction, setDisplayedExtraction] = useState("");
 
     // Reset extraction view when document changes
@@ -36,11 +46,11 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
     }, [document.id]);
 
     const handleExtractAnimation = () => {
-        if (!document.extracted_information) return;
+        if (!currentDoc.extracted_information) return;
         setIsExtracting(true);
         setDisplayedExtraction("");
         
-        const fullText = JSON.stringify(document.extracted_information, null, 2);
+        const fullText = JSON.stringify(currentDoc.extracted_information, null, 2);
         let currentIndex = 0;
         
         const interval = setInterval(() => {
@@ -52,6 +62,31 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
                 setIsExtracting(false);
             }
         }, 10);
+    };
+
+    const handleRunAIInference = async () => {
+        setIsModelRunning(true);
+        setModelStatusText("Dispatching document to AstraX AI inference pipeline...");
+        try {
+            const res = await triggerModelForDocument(currentDoc);
+            setModelStatusText(res.message || "Model inference complete. Refreshing metadata...");
+            try {
+                const refreshed = await getDocument(currentDoc.id);
+                setCurrentDoc(refreshed);
+                updateStoreDocument(refreshed);
+                if (refreshed.extracted_information) {
+                    setDisplayedExtraction(JSON.stringify(refreshed.extracted_information, null, 2));
+                }
+            } catch {
+                // Keep current document state if refresh fails
+            }
+        } catch (err) {
+            setModelStatusText(
+                err instanceof Error ? err.message : "Inference pipeline encountered an error"
+            );
+        } finally {
+            setIsModelRunning(false);
+        }
     };
 
     useEffect(() => {
@@ -209,20 +244,20 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
                 )}
 
                 {/* Status-specific messages */}
-                {document.status === "processing" && (
+                {currentDoc.status === "processing" && (
                     <div className="flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 p-5 text-sm text-blue-300">
                         <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
                         This document is currently being processed. The preview will be available when processing is complete.
                     </div>
                 )}
 
-                {document.status === "pending" && (
+                {currentDoc.status === "pending" && (
                     <div className="rounded-xl border border-surface-300 bg-surface-100 p-5 text-sm text-surface-400">
                         This document is pending upload confirmation.
                     </div>
                 )}
 
-                {document.status === "failed" && (
+                {currentDoc.status === "failed" && (
                     <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-5 text-sm text-rose-300">
                         Processing failed for this document. No preview is available.
                     </div>
@@ -237,60 +272,80 @@ export default function DocumentViewer({ document }: DocumentViewerProps) {
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                         <div className="rounded-lg border border-surface-200 bg-surface-100 p-3">
                             <p className="text-[10px] uppercase font-mono tracking-wider text-surface-500">Document ID</p>
-                            <p className="mt-1 truncate text-xs font-mono text-amber-400">{document.id}</p>
+                            <p className="mt-1 truncate text-xs font-mono text-amber-400">{currentDoc.id}</p>
                         </div>
                         <div className="rounded-lg border border-surface-200 bg-surface-100 p-3">
                             <p className="text-[10px] uppercase font-mono tracking-wider text-surface-500">Case ID</p>
-                            <p className="mt-1 truncate text-xs font-mono text-surface-300">{document.case_id}</p>
+                            <p className="mt-1 truncate text-xs font-mono text-surface-300">{currentDoc.case_id}</p>
                         </div>
                         <div className="rounded-lg border border-surface-200 bg-surface-100 p-3">
                             <p className="text-[10px] uppercase font-mono tracking-wider text-surface-500">Type</p>
-                            <p className="mt-1 text-xs font-mono capitalize text-surface-300">{document.document_type}</p>
+                            <p className="mt-1 text-xs font-mono capitalize text-surface-300">{currentDoc.document_type}</p>
                         </div>
                         <div className="rounded-lg border border-surface-200 bg-surface-100 p-3">
                             <p className="text-[10px] uppercase font-mono tracking-wider text-surface-500">Created</p>
-                            <p className="mt-1 text-xs font-mono text-surface-400">{new Date(document.created_at).toLocaleString()}</p>
+                            <p className="mt-1 text-xs font-mono text-surface-400">{new Date(currentDoc.created_at).toLocaleString()}</p>
                         </div>
                         <div className="rounded-lg border border-surface-200 bg-surface-100 p-3">
                             <p className="text-[10px] uppercase font-mono tracking-wider text-surface-500">Updated</p>
-                            <p className="mt-1 text-xs font-mono text-surface-400">{new Date(document.updated_at).toLocaleString()}</p>
+                            <p className="mt-1 text-xs font-mono text-surface-400">{new Date(currentDoc.updated_at).toLocaleString()}</p>
                         </div>
                     </div>
                 </section>
 
-                {/* Extracted information */}
+                {/* Extracted information & Model inference */}
                 <section>
-                    <div className="mb-4 flex items-center justify-between">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                         <h2 className="text-xs font-bold uppercase tracking-wider text-surface-500">
-                            Extracted Information
+                            Extracted Information & AI Models
                         </h2>
-                        {document.extracted_information && (
+                        <div className="flex items-center gap-2">
                             <button
-                                onClick={handleExtractAnimation}
-                                disabled={isExtracting}
-                                className="flex items-center gap-1.5 rounded bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-600 transition hover:bg-brand-100 disabled:opacity-50"
+                                type="button"
+                                onClick={handleRunAIInference}
+                                disabled={isModelRunning}
+                                className="flex items-center gap-1.5 rounded-lg border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 text-xs font-semibold text-purple-400 transition disabled:opacity-50 cursor-pointer shadow-sm"
                             >
-                                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
-                                {isExtracting ? "Extracting..." : "Run AI Extraction"}
+                                <svg className={`h-3.5 w-3.5 ${isModelRunning ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span>{isModelRunning ? "Running AI Model..." : "Run AI Model Pipeline"}</span>
                             </button>
-                        )}
+
+                            {currentDoc.extracted_information && (
+                                <button
+                                    type="button"
+                                    onClick={handleExtractAnimation}
+                                    disabled={isExtracting}
+                                    className="flex items-center gap-1.5 rounded-lg border border-surface-300 bg-surface-200 px-2.5 py-1.5 text-xs font-semibold text-surface-700 hover:bg-surface-300 transition disabled:opacity-50 cursor-pointer"
+                                >
+                                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                                    </svg>
+                                    <span>{isExtracting ? "Parsing..." : "Replay Extraction"}</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    {document.extracted_information ? (
+                    {modelStatusText && (
+                        <div className="mb-3 flex items-center gap-2 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-mono text-purple-300">
+                            <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
+                            <span>{modelStatusText}</span>
+                        </div>
+                    )}
+
+                    {currentDoc.extracted_information ? (
                         <div className="relative overflow-x-auto rounded-xl border border-surface-200 bg-surface-100 p-4 font-mono text-sm text-surface-700 shadow-inner">
-                            {displayedExtraction ? (
-                                <pre>{displayedExtraction}{isExtracting && <span className="animate-pulse">_</span>}</pre>
-                            ) : (
-                                <div className="text-surface-400 italic">Click 'Run AI Extraction' to view parsed entities...</div>
-                            )}
+                            <pre>{displayedExtraction || JSON.stringify(currentDoc.extracted_information, null, 2)}{isExtracting && <span className="animate-pulse">_</span>}</pre>
                         </div>
                     ) : (
                         <div className="rounded-xl border border-surface-200 bg-surface-100 p-6 text-sm text-surface-500">
-                            {document.status === "processing"
+                            {currentDoc.status === "processing"
                                 ? "Extraction is in progress."
-                                : document.status === "failed"
+                                : currentDoc.status === "failed"
                                   ? "Extraction failed for this document."
-                                  : "No extracted information available yet."}
+                                  : "No extracted information available yet. Click 'Run AI Model Pipeline' above to trigger inference."}
                         </div>
                     )}
                 </section>

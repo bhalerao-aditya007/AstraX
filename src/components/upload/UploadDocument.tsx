@@ -21,9 +21,10 @@ type UploadStage =
     | "error";
 
 const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
-    { value: "image", label: "Image" },
-    { value: "text", label: "Text" },
-    { value: "voice", label: "Voice" },
+    { value: "image", label: "Image (FIR / TrOCR / ANPR)" },
+    { value: "text", label: "Text / Ledger (CSV / Report)" },
+    { value: "voice", label: "Voice / Wiretap (ASR)" },
+    { value: "video", label: "CCTV Video (YOLO Detection)" },
 ];
 
 interface UploadDocumentProps {
