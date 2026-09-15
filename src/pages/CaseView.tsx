@@ -257,6 +257,20 @@ export default function CaseView() {
             ? mockFactSheet
             : dynamicFactSheet);
 
+    const safeFactSheet: FactSheetData = {
+        caseId: activeFactSheet?.caseId || caseData.id,
+        firNumber: activeFactSheet?.firNumber || caseData.name,
+        track: (activeFactSheet?.track ?? caseData.track ?? 2) as 1 | 2,
+        triageReason: activeFactSheet?.triageReason || caseData.triage_reason || "Multi-channel evidence parsed.",
+        who: activeFactSheet?.who || [],
+        what: activeFactSheet?.what || [],
+        when: activeFactSheet?.when || [],
+        where: activeFactSheet?.where || [],
+        evidence: activeFactSheet?.evidence || [],
+        knownRelationships: activeFactSheet?.knownRelationships || [],
+        openGaps: activeFactSheet?.openGaps || [],
+    };
+
     // Dynamic Graph built from actual documents if GNN graph not yet generated
     const dynamicDocGraph = useMemo<GraphData>(() => {
         const nodes: GraphData["nodes"] = [];
@@ -308,50 +322,53 @@ export default function CaseView() {
 
     // Dynamic Locations
     const dynamicLocations = useMemo(() => {
-        return activeFactSheet.where.map((w, idx) => ({
+        return (safeFactSheet.where || []).map((w, idx) => ({
             id: `geo-${idx + 1}`,
-            lat: w.coordinates[0],
-            lng: w.coordinates[1],
-            label: w.locationName,
-            timestamp: activeFactSheet.when[idx]?.timestamp || new Date().toISOString(),
-            entity: activeFactSheet.who[0]?.name || caseData.name,
+            lat: w.coordinates && Array.isArray(w.coordinates) && w.coordinates.length > 0 ? w.coordinates[0] : 28.6139,
+            lng: w.coordinates && Array.isArray(w.coordinates) && w.coordinates.length > 1 ? w.coordinates[1] : 77.2090,
+            label: w.locationName || "Incident Site",
+            timestamp: safeFactSheet.when[idx]?.timestamp || new Date().toISOString(),
+            entity: safeFactSheet.who[0]?.name || caseData.name,
             type: "incident" as const,
-            details: { jurisdiction: w.jurisdiction, significance: w.significance },
-            citation: w.citation,
+            details: { jurisdiction: w.jurisdiction || "State Police", significance: w.significance || "Crime Scene" },
+            citation: w.citation || { documentTitle: "Case Evidence", confidenceScore: 0.9 },
         }));
-    }, [activeFactSheet.where, activeFactSheet.when, activeFactSheet.who, caseData.name]);
+    }, [safeFactSheet.where, safeFactSheet.when, safeFactSheet.who, caseData.name]);
 
     // Dynamic Timeline
     const dynamicTimelineEvents = useMemo(() => {
-        return activeFactSheet.when.map((w, idx) => ({
-            id: `time-${idx + 1}`,
-            date: w.timestamp.slice(0, 10),
-            time: w.timestamp.slice(11, 16) || "12:00",
-            title: w.event,
-            summary: w.event,
-            type: "incident" as const,
-            confidence: 0.95,
-            primaryEntity: activeFactSheet.who[0]?.name || caseData.name,
-            location: w.location,
-            citation: w.citation,
-        }));
-    }, [activeFactSheet.when, activeFactSheet.who, caseData.name]);
+        return (safeFactSheet.when || []).map((w, idx) => {
+            const ts = String(w.timestamp || "");
+            return {
+                id: `time-${idx + 1}`,
+                date: ts.length >= 10 ? ts.slice(0, 10) : new Date().toISOString().slice(0, 10),
+                time: ts.length >= 16 ? ts.slice(11, 16) : "12:00",
+                title: w.event || "Occurrence recorded",
+                summary: w.event || "Occurrence recorded",
+                type: "incident" as const,
+                confidence: 0.95,
+                primaryEntity: safeFactSheet.who[0]?.name || caseData.name,
+                location: w.location || "Jurisdiction",
+                citation: w.citation || { documentTitle: "Case Evidence", confidenceScore: 0.9 },
+            };
+        });
+    }, [safeFactSheet.when, safeFactSheet.who, caseData.name]);
 
     // Dynamic Identity Resolution
     const dynamicIdentityData = useMemo(() => {
         return {
-            target: activeFactSheet.who[0]?.name || caseData.name,
-            candidates: activeFactSheet.who.map((w, idx) => ({
+            target: safeFactSheet.who[0]?.name || caseData.name,
+            candidates: (safeFactSheet.who || []).map((w, idx) => ({
                 id: `cand-${idx + 1}`,
                 name: w.name,
                 confidence: 95,
-                source: w.citation.documentTitle || "Case Evidence",
-                matchingAttributes: [`Role: ${w.role}`, ...(w.alias ? [`Alias: ${w.alias}`] : [])],
+                source: w.citation?.documentTitle || "Case Evidence",
+                matchingAttributes: [`Role: ${w.role || "Subject"}`, ...(w.alias ? [`Alias: ${w.alias}`] : [])],
                 conflictingAttributes: [],
-                reasoning: `Extracted directly from ${w.citation.documentTitle}`,
+                reasoning: `Extracted directly from ${w.citation?.documentTitle || "case record"}`,
             })),
         };
-    }, [activeFactSheet.who, caseData.name]);
+    }, [safeFactSheet.who, caseData.name]);
 
     const scrollToSection = (sectionId: string) => {
         const el = document.getElementById(sectionId);
@@ -458,7 +475,7 @@ export default function CaseView() {
                     {/* 1. FACT SHEET */}
                     <section id="fact-sheet" className="scroll-mt-4">
                         <FactSheet
-                            data={activeFactSheet}
+                            data={safeFactSheet}
                             caseId={caseData.id}
                             isEmbedded={true}
                             showDiffIndicator={deltaDiffApplied}
@@ -480,9 +497,9 @@ export default function CaseView() {
                                           dateIdentified: "Live Inference",
                                           sourceDocument: "AstraX Model Linker",
                                           partialAttributes: {
-                                              gnn_probability: `${(lead.components.gnn_probability * 100).toFixed(1)}%`,
-                                              centrality: `${(lead.components.centrality * 100).toFixed(1)}%`,
-                                              mo_similarity: `${(lead.components.mo_similarity * 100).toFixed(1)}%`,
+                                              gnn_probability: lead.components?.gnn_probability !== undefined ? `${(lead.components.gnn_probability * 100).toFixed(1)}%` : "0%",
+                                              centrality: lead.components?.centrality !== undefined ? `${(lead.components.centrality * 100).toFixed(1)}%` : "0%",
+                                              mo_similarity: lead.components?.mo_similarity !== undefined ? `${(lead.components.mo_similarity * 100).toFixed(1)}%` : "0%",
                                           },
                                           recommendedAction: "Cross-reference vehicle and communication records",
                                       }))
@@ -696,17 +713,17 @@ export default function CaseView() {
                             <p>
                                 The active investigation in <strong>{caseData.name}</strong> incorporates <strong>{documents.length}</strong> ingested evidence stream(s). Recorded statutory offences include:{" "}
                                 <span className="font-semibold text-surface-900">
-                                    {activeFactSheet.what.map((w) => w.bnsSection).join(", ") || "Statutory sections pending extraction"}
+                                    {safeFactSheet.what.map((w) => w.bnsSection).join(", ") || "Statutory sections pending extraction"}
                                 </span>.
                             </p>
                             <p>
                                 Primary named individuals and suspected actors identified in case records include:{" "}
                                 <span className="font-semibold text-surface-900">
-                                    {activeFactSheet.who.map((w) => `${w.name} (${w.role})`).join(", ") || "Parties pending extraction"}
+                                    {safeFactSheet.who.map((w) => `${w.name} (${w.role})`).join(", ") || "Parties pending extraction"}
                                 </span>.
                                 Incident jurisdiction is documented under{" "}
                                 <span className="font-semibold text-surface-900">
-                                    {activeFactSheet.where.map((wh) => wh.locationName).join("; ") || "Jurisdiction under review"}
+                                    {safeFactSheet.where.map((wh) => wh.locationName).join("; ") || "Jurisdiction under review"}
                                 </span>.
                             </p>
                             <p className="text-surface-500 italic">
