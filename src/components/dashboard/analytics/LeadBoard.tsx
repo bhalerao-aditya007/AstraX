@@ -1,5 +1,5 @@
 // src/components/dashboard/analytics/LeadBoard.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "../../ui/Icon";
 import ConfidenceBadge from "../../ui/ConfidenceBadge";
 import { mockPhantomLeads, type PhantomLead } from "../../../data/mockCaseData";
@@ -13,10 +13,17 @@ const COLUMNS: Array<{ id: PhantomLead["status"]; label: string; dotColor: strin
 
 interface LeadBoardProps {
     onSelectLead?: (lead: PhantomLead) => void;
+    data?: PhantomLead[];
 }
 
-export default function LeadBoard({ onSelectLead }: LeadBoardProps) {
-    const [leads, setLeads] = useState<PhantomLead[]>(mockPhantomLeads);
+export default function LeadBoard({ onSelectLead, data }: LeadBoardProps) {
+    const [leads, setLeads] = useState<PhantomLead[]>(data || mockPhantomLeads);
+
+    useEffect(() => {
+        if (data && data.length > 0) {
+            setLeads(data);
+        }
+    }, [data]);
 
     const advanceStatus = (leadId: string, nextStatus: PhantomLead["status"]) => {
         setLeads((prev) =>

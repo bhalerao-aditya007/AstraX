@@ -1,16 +1,24 @@
 // src/components/dashboard/analytics/MOMatchList.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "../../ui/Icon";
 import ConfidenceBadge from "../../ui/ConfidenceBadge";
 import { mockMOMatches, type MOMatch } from "../../../data/mockCaseData";
 
 interface MOMatchListProps {
     onSelectMatch?: (match: MOMatch) => void;
+    data?: MOMatch[];
 }
 
-export default function MOMatchList({ onSelectMatch }: MOMatchListProps) {
-    const [matches] = useState<MOMatch[]>(mockMOMatches);
+export default function MOMatchList({ onSelectMatch, data }: MOMatchListProps) {
+    const [matches, setMatches] = useState<MOMatch[]>(data || mockMOMatches);
     const [expandedId, setExpandedId] = useState<string | null>("mo-1");
+
+    useEffect(() => {
+        if (data && data.length > 0) {
+            setMatches(data);
+            setExpandedId(data[0].id);
+        }
+    }, [data]);
 
     return (
         <div className="flex flex-col gap-4 font-sans">

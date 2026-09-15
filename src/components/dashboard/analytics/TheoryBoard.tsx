@@ -1,5 +1,5 @@
 // src/components/dashboard/analytics/TheoryBoard.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "../../ui/Icon";
 import ConfidenceBadge from "../../ui/ConfidenceBadge";
 import SourceCitationPopover from "../../ui/SourceCitationPopover";
@@ -7,11 +7,19 @@ import { mockTheories, type CrimeTheory } from "../../../data/mockCaseData";
 
 interface TheoryBoardProps {
     onJumpToLead?: (leadId: string) => void;
+    data?: CrimeTheory[];
 }
 
-export default function TheoryBoard({ onJumpToLead }: TheoryBoardProps) {
-    const [theories] = useState<CrimeTheory[]>(mockTheories);
+export default function TheoryBoard({ onJumpToLead, data }: TheoryBoardProps) {
+    const [theories, setTheories] = useState<CrimeTheory[]>(data || mockTheories);
     const [activeVersion, setActiveVersion] = useState<string>("v2");
+
+    useEffect(() => {
+        if (data && data.length > 0) {
+            setTheories(data);
+            setActiveVersion(data[0].version);
+        }
+    }, [data]);
 
     const currentTheory = theories.find((t) => t.version === activeVersion) || theories[0];
 

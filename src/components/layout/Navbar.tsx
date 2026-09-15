@@ -1,9 +1,16 @@
 // src/components/layout/Navbar.tsx
 import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Icon from "../ui/Icon";
 
 export default function Navbar() {
     const location = useLocation();
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const interval = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const isActive = (path: string) => {
         if (path === "/" && location.pathname === "/") return true;
@@ -11,45 +18,59 @@ export default function Navbar() {
         return false;
     };
 
+    const timeStr = currentTime.toLocaleTimeString("en-IN", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+    });
+
+    const dateStr = currentTime.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+
     return (
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-surface-300 bg-surface-100/95 px-5 z-30 font-sans backdrop-blur-md">
-            {/* Logo + Emblem */}
-            <div className="flex items-center gap-6">
-                <Link to="/" className="flex items-center gap-3 group">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-insignia-500/15 border border-insignia-500/40 text-insignia-400 shadow-[0_0_12px_rgba(201,162,39,0.2)] group-hover:scale-105 transition-transform">
-                        <Icon name="shield" size={16} />
+        <header className="flex h-12 shrink-0 items-center justify-between border-b border-surface-300/60 bg-surface-50/95 px-4 z-30 font-sans backdrop-blur-sm">
+            {/* Left: Logo + Nav */}
+            <div className="flex items-center gap-5">
+                <Link to="/" className="flex items-center gap-2.5 group">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-insignia-500/12 border border-insignia-500/30 text-insignia-400 group-hover:border-insignia-500/50 transition-colors">
+                        <Icon name="shield" size={14} />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-base font-extrabold tracking-tight text-surface-900 leading-none flex items-center gap-1.5">
-                            <span>AstraX</span>
-                            <span className="text-[10px] font-mono font-bold bg-insignia-500/20 text-insignia-300 px-1.5 py-0.2 rounded border border-insignia-500/30">
-                                OPS
-                            </span>
+                        <span className="text-sm font-extrabold tracking-tight text-surface-900 leading-none flex items-center gap-1.5">
+                            <span>ASTRA</span>
+                            <span className="text-insignia-400">X</span>
                         </span>
-                        <span className="text-[9px] font-mono tracking-wider text-surface-400 uppercase mt-0.5">
-                            Criminal Network Intelligence
+                        <span className="text-[8px] font-mono tracking-[0.2em] text-surface-400 uppercase">
+                            Intelligence Platform
                         </span>
                     </div>
                 </Link>
 
-                {/* Primary Nav Links */}
-                <nav className="hidden sm:flex items-center gap-1 font-mono text-xs">
+                {/* Vertical Separator */}
+                <div className="h-5 w-px bg-surface-300/50" />
+
+                {/* Primary Nav */}
+                <nav className="hidden sm:flex items-center gap-0.5 font-mono text-[11px]">
                     <Link
                         to="/intake"
-                        className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
+                        className={`px-2.5 py-1 rounded transition-colors ${
                             isActive("/intake")
-                                ? "bg-insignia-500/15 text-insignia-400 border border-insignia-500/30"
-                                : "text-surface-400 hover:text-surface-200 hover:bg-surface-200/50"
+                                ? "bg-insignia-500/12 text-insignia-400 font-bold"
+                                : "text-surface-500 hover:text-surface-300 hover:bg-surface-200/40"
                         }`}
                     >
                         Evidence Intake
                     </Link>
                     <Link
                         to="/dashboard"
-                        className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
+                        className={`px-2.5 py-1 rounded transition-colors ${
                             isActive("/dashboard") || isActive("/cases")
-                                ? "bg-insignia-500/15 text-insignia-400 border border-insignia-500/30"
-                                : "text-surface-400 hover:text-surface-200 hover:bg-surface-200/50"
+                                ? "bg-insignia-500/12 text-insignia-400 font-bold"
+                                : "text-surface-500 hover:text-surface-300 hover:bg-surface-200/40"
                         }`}
                     >
                         Case Directory
@@ -57,18 +78,40 @@ export default function Navbar() {
                 </nav>
             </div>
 
-            {/* Right Status Indicator */}
-            <div className="flex items-center gap-4 text-xs font-mono">
-                <div className="hidden md:flex items-center gap-2 text-surface-400">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                    <span>Air-Gapped Node #DEL-04</span>
+            {/* Right: Status + Actions */}
+            <div className="flex items-center gap-3 text-[10px] font-mono">
+                {/* System Status Strip */}
+                <div className="hidden lg:flex items-center gap-3 text-surface-500 mr-2">
+                    <div className="flex items-center gap-1.5">
+                        <span className="status-dot-online" />
+                        <span>CORE</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="status-dot-online" />
+                        <span>AI ENGINE</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="status-dot-online" />
+                        <span>GRAPH</span>
+                    </div>
                 </div>
 
+                <div className="h-5 w-px bg-surface-300/40 hidden lg:block" />
+
+                {/* Clock */}
+                <div className="hidden md:flex flex-col items-end">
+                    <span className="text-surface-600 font-bold tabular-nums">{timeStr}</span>
+                    <span className="text-[8px] text-surface-500 uppercase">{dateStr}</span>
+                </div>
+
+                <div className="h-5 w-px bg-surface-300/40 hidden md:block" />
+
+                {/* New Intake CTA */}
                 <Link
                     to="/intake"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-insignia-500 hover:bg-insignia-400 text-surface-0 font-bold px-3 py-1.5 text-xs transition-colors shadow cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-insignia-500/90 hover:bg-insignia-400 text-surface-0 font-bold px-3 py-1.5 text-[11px] transition-colors"
                 >
-                    <Icon name="plus" size={13} />
+                    <Icon name="plus" size={11} />
                     <span>New Intake</span>
                 </Link>
             </div>

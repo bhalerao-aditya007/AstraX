@@ -1,17 +1,25 @@
 // src/components/dashboard/analytics/IdentityResolutionView.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { mockIdentityResolution } from "../../../data/mockCaseData";
 import ConfidenceBadge from "../../ui/ConfidenceBadge";
 import Icon from "../../ui/Icon";
 
 interface IdentityResolutionViewProps {
     onSelectCandidate?: (candidate: any) => void;
+    data?: typeof mockIdentityResolution;
 }
 
-export default function IdentityResolutionView({ onSelectCandidate }: IdentityResolutionViewProps) {
-    const [selectedCand, setSelectedCand] = useState(mockIdentityResolution.candidates[0].id);
+export default function IdentityResolutionView({ onSelectCandidate, data }: IdentityResolutionViewProps) {
+    const activeData = data || mockIdentityResolution;
+    const [selectedCand, setSelectedCand] = useState(activeData.candidates[0]?.id || "cand-1");
 
-    const activeCand = mockIdentityResolution.candidates.find((c) => c.id === selectedCand);
+    useEffect(() => {
+        if (data && data.candidates?.length > 0) {
+            setSelectedCand(data.candidates[0].id);
+        }
+    }, [data]);
+
+    const activeCand = activeData.candidates.find((c) => c.id === selectedCand) || activeData.candidates[0];
 
     const handleSelect = (cand: typeof mockIdentityResolution.candidates[0]) => {
         setSelectedCand(cand.id);
@@ -22,7 +30,7 @@ export default function IdentityResolutionView({ onSelectCandidate }: IdentityRe
                 type: "candidate_merge",
                 confidence: cand.confidence / 100,
                 details: {
-                    target: mockIdentityResolution.target,
+                    target: activeData.target,
                     source: cand.source,
                     matchingAttributes: cand.matchingAttributes.join(", "),
                     conflictingAttributes: cand.conflictingAttributes.join(", "),
@@ -41,7 +49,7 @@ export default function IdentityResolutionView({ onSelectCandidate }: IdentityRe
                         <span>Entity De-duplication & Identity Resolution</span>
                     </h3>
                     <p className="text-xs text-surface-500 mt-0.5">
-                        Target Entity: <span className="font-bold text-insignia-400 font-mono">{mockIdentityResolution.target}</span> • Cross-system disambiguation.
+                        Target Entity: <span className="font-bold text-insignia-400 font-mono">{activeData.target}</span> • Cross-system disambiguation.
                     </p>
                 </div>
 
@@ -54,9 +62,9 @@ export default function IdentityResolutionView({ onSelectCandidate }: IdentityRe
                 {/* Candidates List */}
                 <div className="w-full lg:w-1/3 flex flex-col gap-3">
                     <span className="text-[11px] font-mono uppercase tracking-wider text-surface-500">
-                        Candidate Profiles ({mockIdentityResolution.candidates.length})
+                        Candidate Profiles ({activeData.candidates.length})
                     </span>
-                    {mockIdentityResolution.candidates.map((cand) => (
+                    {activeData.candidates.map((cand) => (
                         <div 
                             key={cand.id}
                             onClick={() => handleSelect(cand)}
@@ -95,9 +103,9 @@ export default function IdentityResolutionView({ onSelectCandidate }: IdentityRe
                             <div className="flex items-center gap-6 justify-center">
                                 <div className="text-center">
                                     <div className="w-14 h-14 rounded-full bg-surface-200 border-2 border-surface-300 flex items-center justify-center text-lg font-bold text-surface-400 mx-auto mb-2">
-                                        {mockIdentityResolution.target.charAt(0)}
+                                        {activeData.target.charAt(0)}
                                     </div>
-                                    <div className="font-bold text-sm text-surface-900">{mockIdentityResolution.target}</div>
+                                    <div className="font-bold text-sm text-surface-900">{activeData.target}</div>
                                     <div className="text-[10px] font-mono text-surface-500 uppercase">Target FIR Node</div>
                                 </div>
                                 

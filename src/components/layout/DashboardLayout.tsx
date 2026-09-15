@@ -55,27 +55,27 @@ export default function DashboardLayout() {
         <div className="flex h-screen flex-col bg-surface-0 font-sans text-surface-700 overflow-hidden">
             <Navbar />
             
-            {/* Command Bar Toolbar for toggling panels */}
-            <div className="flex items-center justify-between border-b border-surface-300 bg-surface-100/90 px-4 py-1.5 z-20 font-mono text-xs">
-                <div className="flex items-center gap-3">
+            {/* Command Bar */}
+            <div className="flex items-center justify-between border-b border-surface-300/50 bg-surface-50 px-4 py-1 z-20 font-mono text-[10px]">
+                <div className="flex items-center gap-2.5">
                     <button 
                         onClick={() => setLeftOpen(!leftOpen)}
-                        className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-surface-400 hover:text-surface-200 hover:bg-surface-200 transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 rounded px-2 py-0.5 text-surface-500 hover:text-surface-300 hover:bg-surface-200/40 transition-colors cursor-pointer"
                     >
-                        <Icon name="folder" size={13} />
+                        <Icon name="folder" size={11} />
                         <span>{leftOpen ? "Hide Cases" : "Show Cases"}</span>
                     </button>
-                    <span className="text-surface-400">|</span>
-                    <span className="text-surface-400">Operational Records Database</span>
+                    <span className="text-surface-400/40">│</span>
+                    <span className="text-surface-500 uppercase tracking-wider">Operational Records Database</span>
                 </div>
 
                 {selectedDocumentId && (
                     <button 
                         onClick={() => setRightOpen(!rightOpen)}
-                        className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-surface-400 hover:text-surface-200 hover:bg-surface-200 transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 rounded px-2 py-0.5 text-surface-500 hover:text-surface-300 hover:bg-surface-200/40 transition-colors cursor-pointer"
                     >
                         <span>{rightOpen ? "Hide Document" : "Show Document"}</span>
-                        <Icon name="file-text" size={13} />
+                        <Icon name="file-text" size={11} />
                     </button>
                 )}
             </div>
@@ -83,11 +83,11 @@ export default function DashboardLayout() {
             <div className="relative flex min-h-0 flex-1 overflow-hidden">
                 {/* Left Panel: Cases List */}
                 <div
-                    className={`transition-all duration-300 ease-in-out border-r border-surface-300 bg-surface-100 flex shrink-0 ${
-                        leftOpen ? "w-80 opacity-100" : "w-0 opacity-0 overflow-hidden border-none"
+                    className={`transition-all duration-300 ease-in-out border-r border-surface-300/50 bg-surface-50 flex shrink-0 ${
+                        leftOpen ? "w-72 opacity-100" : "w-0 opacity-0 overflow-hidden border-none"
                     }`}
                 >
-                    <div className="w-80 flex shrink-0 h-full">
+                    <div className="w-72 flex shrink-0 h-full">
                         <Sidebar />
                     </div>
                 </div>
@@ -102,7 +102,7 @@ export default function DashboardLayout() {
                     <>
                         {/* Resizer Handle */}
                         <div 
-                            className="w-1.5 cursor-col-resize hover:bg-insignia-400 active:bg-insignia-500 z-30 transition-colors bg-surface-300"
+                            className="w-1 cursor-col-resize hover:bg-insignia-500/50 active:bg-insignia-500 z-30 transition-colors bg-surface-300/50"
                             onMouseDown={() => {
                                 isDraggingRef.current = true;
                                 document.body.style.cursor = "col-resize";
@@ -111,7 +111,7 @@ export default function DashboardLayout() {
 
                         <div 
                             style={{ width: `${rightWidth}px` }} 
-                            className="shrink-0 border-l border-surface-300 bg-surface-100 h-full flex flex-col z-20 shadow-2xl"
+                            className="shrink-0 border-l border-surface-300/50 bg-surface-50 h-full flex flex-col z-20 shadow-2xl shadow-black/30"
                         >
                             <DocumentViewer document={selectedDocument} />
                         </div>

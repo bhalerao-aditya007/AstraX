@@ -10,7 +10,7 @@ export type DocumentStatus =
   | "failed"
   | "finish";
 
-export type DocumentType = "image" | "text" | "voice";
+export type DocumentType = "image" | "text" | "voice" | "video";
 
 export interface Document {
   id: string;

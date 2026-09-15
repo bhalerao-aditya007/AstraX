@@ -32,23 +32,32 @@ import {
     mockForensicEvidence,
     mockStructuringAlerts,
     mockAuditLog,
+    mockPhantomLeads,
+    mockTheories,
+    mockMOMatches,
 } from "../data/mockCaseData";
+import {
+    triggerHistoricalAnalysis,
+    getCaseGraph,
+    type GraphData,
+    type AnalysisReport,
+} from "../services/analytics";
 
 const SCROLLSPY_SECTIONS = [
-    { id: "fact-sheet", label: "01. Fact Sheet", icon: "file-text" },
-    { id: "lead-board", label: "02. Lead Board", icon: "shield" },
-    { id: "knowledge-graph", label: "03. Knowledge Graph", icon: "network-graph" },
-    { id: "financial-tracing", label: "04. Financial Tracing", icon: "wallet" },
-    { id: "communication-analysis", label: "05. Communication", icon: "phone-tower" },
-    { id: "digital-forensics", label: "06. Digital Forensics", icon: "terminal" },
-    { id: "forensic-evidence", label: "07. Physical Evidence", icon: "evidence-tag" },
-    { id: "geo-location", label: "08. Geo-Intelligence", icon: "map-pin" },
-    { id: "timeline", label: "09. Chronology", icon: "clock" },
-    { id: "identity-resolution", label: "10. Identity Resolution", icon: "fingerprint" },
-    { id: "mo-matches", label: "11. MO / Serial Matches", icon: "radar" },
-    { id: "theories", label: "12. Crime Theories", icon: "scale-justice" },
-    { id: "investigative-brief", label: "13. Narrative Brief", icon: "file-text" },
-    { id: "audit-log", label: "14. Audit & Confidence", icon: "check-circle" },
+    { id: "fact-sheet", label: "Fact Sheet", icon: "file-text", num: "01" },
+    { id: "lead-board", label: "Lead Board", icon: "shield", num: "02" },
+    { id: "knowledge-graph", label: "Knowledge Graph", icon: "network-graph", num: "03" },
+    { id: "financial-tracing", label: "Financial Tracing", icon: "wallet", num: "04" },
+    { id: "communication-analysis", label: "Communications", icon: "phone-tower", num: "05" },
+    { id: "digital-forensics", label: "Digital Forensics", icon: "terminal", num: "06" },
+    { id: "forensic-evidence", label: "Physical Evidence", icon: "evidence-tag", num: "07" },
+    { id: "geo-location", label: "Geo-Intelligence", icon: "map-pin", num: "08" },
+    { id: "timeline", label: "Chronology", icon: "clock", num: "09" },
+    { id: "identity-resolution", label: "Identity Resolution", icon: "fingerprint", num: "10" },
+    { id: "mo-matches", label: "MO / Serial Matches", icon: "radar", num: "11" },
+    { id: "theories", label: "Crime Theories", icon: "scale-justice", num: "12" },
+    { id: "investigative-brief", label: "Narrative Brief", icon: "file-text", num: "13" },
+    { id: "audit-log", label: "Audit & Confidence", icon: "check-circle", num: "14" },
 ];
 
 const GNN_SYNTHESIZED_DATA = {
@@ -88,12 +97,44 @@ export default function CaseView() {
     const [showReasoningTrace, setShowReasoningTrace] = useState(false);
     const [isLeftRailOpen, setIsLeftRailOpen] = useState(true);
 
+    // Live AI Analysis State
+    const [liveReport, setLiveReport] = useState<AnalysisReport | null>(null);
+    const [liveGraph, setLiveGraph] = useState<GraphData | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
     const mainScrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (cases.length === 0) fetchCases();
-        if (caseId) fetchDocuments(caseId);
+        if (caseId) {
+            fetchDocuments(caseId);
+            getCaseGraph(caseId)
+                .then((g) => {
+                    if (g && g.nodes?.length > 0) setLiveGraph(g);
+                })
+                .catch(() => {});
+        }
     }, [caseId, cases.length, fetchCases, fetchDocuments]);
+
+    const handleRunAIAnalysis = async () => {
+        if (!caseId) return;
+        setIsAnalyzing(true);
+        try {
+            const [report, graph] = await Promise.all([
+                triggerHistoricalAnalysis(caseId),
+                getCaseGraph(caseId),
+            ]);
+            setLiveReport(report);
+            if (graph && graph.nodes?.length > 0) {
+                setLiveGraph(graph);
+            }
+            setDeltaDiffApplied(true);
+        } catch (err) {
+            console.error("Historical analysis error:", err);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
 
     const caseData = cases.find((c) => c.id === caseId) || {
         id: caseId || "case-1",
@@ -102,6 +143,22 @@ export default function CaseView() {
         triage_reason: "Multi-layered syndicate: 4 shell entities, Wasabi crypto mixer cluster, and international burner relays.",
         version: deltaDiffApplied ? 3 : 2,
     };
+
+    const liveIdentityData =
+        liveReport?.entities && liveReport.entities.length > 0
+            ? {
+                  target: caseData.name || "Primary Subject",
+                  candidates: liveReport.entities.map((e, idx) => ({
+                      id: e.id || `live-cand-${idx}`,
+                      name: e.name,
+                      confidence: 88,
+                      source: e.source || "Live AstraX NLP Pipeline",
+                      matchingAttributes: e.matchingAttributes || ["Identified in FIR extraction record"],
+                      conflictingAttributes: [] as string[],
+                      reasoning: `Extracted via AstraX live entity resolution pipeline for ${caseData.name}.`,
+                  })),
+              }
+            : undefined;
 
     // Scrollspy Intersection Observer
     useEffect(() => {
@@ -137,85 +194,111 @@ export default function CaseView() {
         }
     };
 
+    /* ─── Section Header Helper ─── */
+    const SectionHeader = ({ num, icon, title, subtitle }: { num: string; icon: string; title: string; subtitle: string }) => (
+        <div className="panel-header mb-4">
+            <div>
+                <h3 className="text-sm font-bold text-surface-900 tracking-tight flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-surface-500 font-medium">{num}</span>
+                    <Icon name={icon as any} size={14} className="text-insignia-400" />
+                    <span>{title}</span>
+                </h3>
+                <p className="text-[10px] text-surface-500 mt-0.5 ml-[52px]">{subtitle}</p>
+            </div>
+        </div>
+    );
+
     return (
         <div className="flex h-screen flex-col bg-surface-0 font-sans text-surface-700 overflow-hidden">
             <Navbar />
 
-            {/* Tactical Grid Background Motif */}
-            <div className="absolute inset-0 bg-tactical-grid opacity-15 pointer-events-none" />
+            {/* Tactical Grid Background */}
+            <div className="absolute inset-0 bg-tactical-fine opacity-100 pointer-events-none" />
 
             {/* 3-Zone Workspace Shell */}
             <div className="relative flex min-h-0 flex-1 overflow-hidden z-10">
-                {/* ── ZONE 1: LEFT RAIL (COLLAPSIBLE) ── */}
+                {/* ── ZONE 1: LEFT RAIL ── */}
                 <aside
-                    className={`transition-all duration-300 ease-in-out border-r border-surface-300 bg-surface-100 flex flex-col shrink-0 overflow-hidden ${
-                        isLeftRailOpen ? "w-80 opacity-100" : "w-0 opacity-0 border-none"
+                    className={`transition-all duration-300 ease-in-out border-r border-surface-300/50 bg-surface-50 flex flex-col shrink-0 overflow-hidden ${
+                        isLeftRailOpen ? "w-72 opacity-100" : "w-0 opacity-0 border-none"
                     }`}
                 >
-                    <div className="w-80 flex flex-col h-full overflow-hidden">
-                        {/* Case Header & Track Badge */}
-                        <div className="p-4 border-b border-surface-200/80 bg-surface-100/90 space-y-3">
+                    <div className="w-72 flex flex-col h-full overflow-hidden">
+                        {/* Case Header */}
+                        <div className="p-3 border-b border-surface-300/50 space-y-2.5">
                             <div className="flex items-center justify-between">
                                 <Link
                                     to="/dashboard"
-                                    className="inline-flex items-center gap-1.5 text-xs font-mono text-surface-400 hover:text-insignia-400 transition-colors"
+                                    className="inline-flex items-center gap-1 text-[10px] font-mono text-surface-500 hover:text-insignia-400 transition-colors"
                                 >
-                                    <Icon name="arrow-left" size={13} />
+                                    <Icon name="arrow-left" size={11} />
                                     <span>Case Directory</span>
                                 </Link>
-                                <span className="font-mono text-[11px] text-insignia-400 font-bold bg-insignia-500/10 px-2 py-0.5 rounded border border-insignia-500/20">
+                                <span className="font-mono text-[9px] text-insignia-400 font-bold bg-insignia-500/10 px-1.5 py-0.5 rounded border border-insignia-500/20">
                                     v{caseData.version || 2}
                                 </span>
                             </div>
 
                             <div>
-                                <h1 className="text-sm font-bold text-surface-900 leading-snug line-clamp-2">
+                                <h1 className="text-xs font-bold text-surface-900 leading-snug line-clamp-2">
                                     {caseData.name}
                                 </h1>
-                                <div className="mt-2">
+                                <div className="mt-1.5">
                                     <TrackBadge track={(caseData.track as 1 | 2) || 2} size="sm" />
                                 </div>
                             </div>
 
-                            {/* Add New Evidence Button (Delta Ingestion) */}
+                            {/* AI Reconstruction */}
+                            <button
+                                type="button"
+                                disabled={isAnalyzing}
+                                onClick={handleRunAIAnalysis}
+                                className="w-full flex items-center justify-center gap-2 rounded-md bg-violet-600/90 hover:bg-violet-500 text-white font-bold px-3 py-1.5 text-[11px] transition-all cursor-pointer disabled:opacity-50"
+                            >
+                                <Icon name="radar" size={12} />
+                                <span>{isAnalyzing ? "Synthesizing..." : "Run AI Reconstruction"}</span>
+                            </button>
+
+                            {/* Add Evidence */}
                             <button
                                 type="button"
                                 onClick={() => setIsDeltaModalOpen(true)}
-                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-insignia-500 hover:bg-insignia-400 text-surface-0 font-bold px-3 py-2 text-xs transition-all shadow-sm cursor-pointer"
+                                className="w-full flex items-center justify-center gap-2 rounded-md bg-insignia-500/90 hover:bg-insignia-400 text-surface-0 font-bold px-3 py-1.5 text-[11px] transition-all cursor-pointer"
                             >
-                                <Icon name="upload" size={14} />
+                                <Icon name="upload" size={12} />
                                 <span>Add New Evidence</span>
                             </button>
                         </div>
 
-                        {/* Scrollspy Jump-Links */}
-                        <div className="p-3 border-b border-surface-200/80">
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-surface-400 font-bold block mb-2 px-2">
-                                Analysis Jump Links
+                        {/* Scrollspy Navigation */}
+                        <div className="p-2.5 border-b border-surface-300/50">
+                            <span className="section-label block mb-1.5 px-2">
+                                Analysis Sections
                             </span>
-                            <nav className="space-y-0.5 max-h-48 overflow-y-auto pr-1">
+                            <nav className="space-y-px max-h-44 overflow-y-auto pr-1">
                                 {SCROLLSPY_SECTIONS.map((sec) => (
                                     <button
                                         key={sec.id}
                                         type="button"
                                         onClick={() => scrollToSection(sec.id)}
-                                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-mono text-left transition-colors cursor-pointer ${
+                                        className={`w-full flex items-center gap-2 px-2 py-1 rounded text-[10px] font-mono text-left transition-colors cursor-pointer ${
                                             activeSection === sec.id
-                                                ? "bg-insignia-500/15 text-insignia-400 font-bold border-l-2 border-insignia-400"
-                                                : "text-surface-400 hover:text-surface-200 hover:bg-surface-200/50"
+                                                ? "bg-insignia-500/10 text-insignia-400 font-bold border-l-2 border-insignia-400"
+                                                : "text-surface-500 hover:text-surface-300 hover:bg-surface-200/30"
                                         }`}
                                     >
+                                        <span className="text-surface-500/60 w-4 text-right">{sec.num}</span>
                                         <span className="truncate">{sec.label}</span>
                                     </button>
                                 ))}
                             </nav>
                         </div>
 
-                        {/* Case Documents Sub-List */}
-                        <div className="flex-1 overflow-y-auto p-3 flex flex-col">
-                            <div className="flex items-center justify-between mb-2 px-2">
-                                <span className="text-[10px] font-mono uppercase tracking-wider text-surface-400 font-bold">
-                                    Case Evidence Files ({documents.length})
+                        {/* Case Documents */}
+                        <div className="flex-1 overflow-y-auto p-2.5 flex flex-col">
+                            <div className="flex items-center justify-between mb-1.5 px-2">
+                                <span className="section-label">
+                                    Evidence Files ({documents.length})
                                 </span>
                             </div>
                             <div className="flex-1 overflow-y-auto pr-1">
@@ -225,31 +308,31 @@ export default function CaseView() {
                     </div>
                 </aside>
 
-                {/* Left Rail Toggle Bar */}
+                {/* Left Rail Toggle */}
                 <button
                     type="button"
                     onClick={() => setIsLeftRailOpen(!isLeftRailOpen)}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-30 flex h-12 w-3.5 items-center justify-center rounded-r bg-surface-200 border border-l-0 border-surface-300 text-surface-400 hover:text-white transition-colors"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-30 flex h-10 w-3 items-center justify-center rounded-r bg-surface-200/80 border border-l-0 border-surface-300/50 text-surface-500 hover:text-insignia-400 hover:bg-surface-200 transition-colors"
                     title={isLeftRailOpen ? "Collapse Sidebar" : "Expand Sidebar"}
                 >
-                    <Icon name={isLeftRailOpen ? "chevron-right" : "chevron-right"} size={10} className={isLeftRailOpen ? "rotate-180" : ""} />
+                    <Icon name={isLeftRailOpen ? "chevron-right" : "chevron-right"} size={9} className={isLeftRailOpen ? "rotate-180" : ""} />
                 </button>
 
-                {/* ── ZONE 2: CENTER (CONTINUOUSLY SCROLLABLE MAIN COLUMN) ── */}
+                {/* ── ZONE 2: CENTER MAIN ── */}
                 <main
                     ref={mainScrollRef}
-                    className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-8 scroll-smooth"
+                    className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6 space-y-5 scroll-smooth"
                 >
-                    {/* Delta Ingestion Banner (shown if delta diff was applied) */}
+                    {/* Delta Banner */}
                     {deltaDiffApplied && (
-                        <div className="rounded-xl border border-emerald-500/50 bg-emerald-950/20 p-4 text-xs text-emerald-300 flex items-start justify-between gap-3 shadow-lg">
-                            <div className="flex items-start gap-2.5">
-                                <Icon name="check-circle" size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-3 text-xs text-emerald-300 flex items-start justify-between gap-3 animate-fade-in">
+                            <div className="flex items-start gap-2">
+                                <Icon name="check-circle" size={14} className="text-emerald-400 shrink-0 mt-0.5" />
                                 <div>
-                                    <strong className="block text-sm font-bold text-emerald-200">
+                                    <strong className="block text-xs font-bold text-emerald-200">
                                         Delta Ingestion Synced (v3 Active)
                                     </strong>
-                                    <span>
+                                    <span className="text-[10px]">
                                         4 new facts reconciled into Fact-Sheet, Amit Singh beneficial ownership verified, and Crime Theory upgraded to v3.
                                     </span>
                                 </div>
@@ -257,7 +340,7 @@ export default function CaseView() {
                             <button
                                 type="button"
                                 onClick={() => setDeltaDiffApplied(false)}
-                                className="text-surface-400 hover:text-white text-xs"
+                                className="text-surface-500 hover:text-white text-[10px] shrink-0"
                             >
                                 Dismiss
                             </button>
@@ -267,7 +350,7 @@ export default function CaseView() {
                     {/* 1. FACT SHEET */}
                     <section id="fact-sheet" className="scroll-mt-4">
                         <FactSheet
-                            data={mockFactSheet}
+                            data={liveReport?.fact_sheet || mockFactSheet}
                             caseId={caseData.id}
                             isEmbedded={true}
                             showDiffIndicator={deltaDiffApplied}
@@ -275,9 +358,28 @@ export default function CaseView() {
                         />
                     </section>
 
-                    {/* 2. INVESTIGATIVE LEAD BOARD */}
-                    <section id="lead-board" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4">
+                    {/* 2. LEAD BOARD */}
+                    <section id="lead-board" className="panel p-4 shadow-sm scroll-mt-4">
                         <LeadBoard
+                            data={
+                                liveReport?.priority_leads && liveReport.priority_leads.length > 0
+                                    ? liveReport.priority_leads.map((lead) => ({
+                                          id: lead.entity_id,
+                                          title: lead.display_name,
+                                          phantomType: "person" as const,
+                                          confidenceScore: lead.score,
+                                          status: "open" as const,
+                                          dateIdentified: "Live Inference",
+                                          sourceDocument: "AstraX AI Historical Linker",
+                                          partialAttributes: {
+                                              gnn_probability: `${(lead.components.gnn_probability * 100).toFixed(1)}%`,
+                                              centrality: `${(lead.components.centrality * 100).toFixed(1)}%`,
+                                              mo_similarity: `${(lead.components.mo_similarity * 100).toFixed(1)}%`,
+                                          },
+                                          recommendedAction: "Verify cross-case linkage and cell tower overlaps",
+                                      }))
+                                    : mockPhantomLeads
+                            }
                             onSelectLead={(lead) => {
                                 setSelectedItem({
                                     id: lead.id,
@@ -302,45 +404,35 @@ export default function CaseView() {
                         />
                     </section>
 
-                    {/* 3. KNOWLEDGE GRAPH / GNN OUTPUT */}
-                    <section id="knowledge-graph" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div>
-                                <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
-                                    <Icon name="network-graph" size={16} className="text-insignia-400" />
-                                    <span>Graph Neural Network (GNN) Holistic Entity Network</span>
-                                </h3>
-                                <p className="text-xs text-surface-500 mt-0.5">
-                                    Unified force-directed topology merging confirmed evidentiary ties with probabilistic hypothesis edges.
-                                </p>
-                            </div>
-                        </div>
+                    {/* 3. KNOWLEDGE GRAPH */}
+                    <section id="knowledge-graph" className="panel p-4 shadow-sm scroll-mt-4 space-y-3">
+                        <SectionHeader
+                            num="03"
+                            icon="network-graph"
+                            title="GNN Holistic Entity Network"
+                            subtitle="Force-directed topology merging confirmed evidentiary ties with probabilistic hypothesis edges."
+                        />
 
-                        <div className="h-[460px] w-full">
+                        <div className="h-[480px] w-full">
                             <NetworkGraph
-                                data={GNN_SYNTHESIZED_DATA}
+                                data={liveGraph || GNN_SYNTHESIZED_DATA}
                                 theme="digital"
                                 onNodeClick={(node) => setSelectedItem(node)}
                             />
                         </div>
                     </section>
 
-                    {/* 4. FINANCIAL TRACING + STRUCTURING ALERTS */}
-                    <section id="financial-tracing" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-surface-200/80 pb-3">
-                            <div>
-                                <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
-                                    <Icon name="wallet" size={16} className="text-emerald-400" />
-                                    <span>Financial Tracing & GBM Structuring Anomalies</span>
-                                </h3>
-                                <p className="text-xs text-surface-500 mt-0.5">
-                                    Fund flow tracking from domestic corporate bank accounts to offshore crypto wash clusters.
-                                </p>
-                            </div>
-                        </div>
+                    {/* 4. FINANCIAL TRACING */}
+                    <section id="financial-tracing" className="panel p-4 shadow-sm scroll-mt-4 space-y-4">
+                        <SectionHeader
+                            num="04"
+                            icon="wallet"
+                            title="Financial Tracing & Structuring Anomalies"
+                            subtitle="Fund flow tracking from domestic corporate accounts to offshore crypto wash clusters."
+                        />
 
-                        {/* Compact Structuring-Alert List (GBM Output) */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {/* Structuring Alerts */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                             {mockStructuringAlerts.map((alert) => (
                                 <div
                                     key={alert.id}
@@ -357,27 +449,27 @@ export default function CaseView() {
                                             timeWindow: alert.timeWindow,
                                             gbmFeatures: alert.gbmFeatures.join("; "),
                                         },
-                                        merge_reason: `GBM Gradient Boosted Model flagged anomalous cadence with ${alert.riskScore * 100}% certainty`
+                                        merge_reason: `GBM flagged anomalous cadence with ${alert.riskScore * 100}% certainty`
                                     })}
-                                    className="cursor-pointer rounded-lg border border-amber-500/40 bg-amber-950/20 p-3.5 text-xs hover:border-amber-400 transition-colors flex flex-col justify-between gap-2"
+                                    className="cursor-pointer rounded-md border border-amber-500/25 bg-amber-950/15 p-3 text-xs hover:border-amber-400/50 transition-colors flex flex-col justify-between gap-1.5"
                                 >
                                     <div className="flex items-start justify-between gap-2">
-                                        <div className="font-bold text-amber-300 font-mono text-[11px]">
+                                        <div className="font-bold text-amber-300 font-mono text-[10px]">
                                             {alert.patternType}
                                         </div>
                                         <ConfidenceBadge score={alert.confidence} size="sm" />
                                     </div>
-                                    <div className="font-mono text-[11px] text-surface-800">
+                                    <div className="font-mono text-[10px] text-surface-700">
                                         {alert.accountNumber} ({alert.bankName})
                                     </div>
-                                    <div className="text-[10px] text-amber-400/80 font-mono">
+                                    <div className="text-[9px] text-amber-400/70 font-mono">
                                         {alert.totalAmount}
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="h-[420px] w-full mt-2">
+                        <div className="h-[400px] w-full">
                             <NetworkGraph
                                 data={mockFinancialTracing}
                                 theme="financial"
@@ -387,22 +479,22 @@ export default function CaseView() {
                     </section>
 
                     {/* 5. COMMUNICATION ANALYSIS */}
-                    <section id="communication-analysis" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-surface-200/80 pb-3">
+                    <section id="communication-analysis" className="panel p-4 shadow-sm scroll-mt-4 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-surface-200/50 pb-3">
                             <div>
-                                <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
-                                    <Icon name="phone-tower" size={16} className="text-purple-400" />
+                                <h3 className="text-sm font-bold text-surface-900 tracking-tight flex items-center gap-2">
+                                    <span className="text-[10px] font-mono text-surface-500 font-medium">05</span>
+                                    <Icon name="phone-tower" size={14} className="text-violet-400" />
                                     <span>Telecommunications & Burner Churn Analysis</span>
                                 </h3>
-                                <p className="text-xs text-surface-500 mt-0.5">
-                                    Call detail record (CDR) link frequency and VoIP intermediary relay detection.
+                                <p className="text-[10px] text-surface-500 mt-0.5 ml-[52px]">
+                                    CDR link frequency and VoIP intermediary relay detection.
                                 </p>
                             </div>
 
-                            {/* Burner Churn Alert Strip */}
-                            <div className="inline-flex items-center gap-2 rounded bg-red-950/60 border border-red-500/40 px-3 py-1 text-xs font-mono text-red-300">
-                                <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
-                                <span>High Churn Alert: Burner +91-9871 active 4 days only</span>
+                            <div className="inline-flex items-center gap-1.5 rounded-md bg-red-950/40 border border-red-500/25 px-2.5 py-1 text-[10px] font-mono text-red-300">
+                                <span className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse" />
+                                <span>High Churn: Burner +91-9871 active 4 days</span>
                             </div>
                         </div>
 
@@ -416,16 +508,13 @@ export default function CaseView() {
                     </section>
 
                     {/* 6. DIGITAL FORENSICS */}
-                    <section id="digital-forensics" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-4">
-                        <div className="border-b border-surface-200/80 pb-3">
-                            <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
-                                <Icon name="terminal" size={16} className="text-blue-400" />
-                                <span>Digital Forensics Artifacts & File Carving</span>
-                            </h3>
-                            <p className="text-xs text-surface-500 mt-0.5">
-                                Seized MacBook and iPhone file systems, carve reports, and encrypted databases.
-                            </p>
-                        </div>
+                    <section id="digital-forensics" className="panel p-4 shadow-sm scroll-mt-4 space-y-3">
+                        <SectionHeader
+                            num="06"
+                            icon="terminal"
+                            title="Digital Forensics Artifacts"
+                            subtitle="Seized device file systems, carve reports, and encrypted databases."
+                        />
                         <div className="h-[400px] w-full">
                             <NetworkGraph
                                 data={mockDigitalForensics}
@@ -436,16 +525,13 @@ export default function CaseView() {
                     </section>
 
                     {/* 7. FORENSIC EVIDENCE */}
-                    <section id="forensic-evidence" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-4">
-                        <div className="border-b border-surface-200/80 pb-3">
-                            <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
-                                <Icon name="evidence-tag" size={16} className="text-amber-400" />
-                                <span>Physical Forensic Evidence & Laboratory Matches</span>
-                            </h3>
-                            <p className="text-xs text-surface-500 mt-0.5">
-                                CFSL DNA swabbing, latent fingerprints, and toolmark striations.
-                            </p>
-                        </div>
+                    <section id="forensic-evidence" className="panel p-4 shadow-sm scroll-mt-4 space-y-3">
+                        <SectionHeader
+                            num="07"
+                            icon="evidence-tag"
+                            title="Physical Forensic Evidence & Lab Matches"
+                            subtitle="CFSL DNA, latent fingerprints, and toolmark striations."
+                        />
                         <div className="h-[400px] w-full">
                             <NetworkGraph
                                 data={mockForensicEvidence}
@@ -455,17 +541,14 @@ export default function CaseView() {
                         </div>
                     </section>
 
-                    {/* 8. GEO-LOCATION INTELLIGENCE */}
-                    <section id="geo-location" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-3">
-                        <div className="border-b border-surface-200/80 pb-3">
-                            <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
-                                <Icon name="map-pin" size={16} className="text-insignia-400" />
-                                <span>Geospatial Intelligence & Movement Route</span>
-                            </h3>
-                            <p className="text-xs text-surface-500 mt-0.5">
-                                Chronological movement vector linking primary suspect residence, drop points, and exfiltration attempt.
-                            </p>
-                        </div>
+                    {/* 8. GEO-INTELLIGENCE */}
+                    <section id="geo-location" className="panel p-4 shadow-sm scroll-mt-4 space-y-3">
+                        <SectionHeader
+                            num="08"
+                            icon="map-pin"
+                            title="Geospatial Intelligence & Movement"
+                            subtitle="Chronological movement vector linking suspect locations and drop points."
+                        />
                         <div className="h-[440px] w-full">
                             <GeoLocationView onSelect={(item) => setSelectedItem(item)} />
                         </div>
@@ -478,44 +561,62 @@ export default function CaseView() {
 
                     {/* 10. IDENTITY RESOLUTION */}
                     <section id="identity-resolution" className="scroll-mt-4">
-                        <IdentityResolutionView onSelectCandidate={(cand) => setSelectedItem(cand)} />
+                        <IdentityResolutionView
+                            data={liveIdentityData}
+                            onSelectCandidate={(cand) => setSelectedItem(cand)}
+                        />
                     </section>
 
-                    {/* 11. MO-SIMILARITY / SERIAL-CRIME MATCHES */}
-                    <section id="mo-matches" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4">
-                        <MOMatchList />
+                    {/* 11. MO MATCHES */}
+                    <section id="mo-matches" className="panel p-4 shadow-sm scroll-mt-4">
+                        <MOMatchList
+                            data={
+                                liveReport?.mo_matches?.matched_historical_cases &&
+                                liveReport.mo_matches.matched_historical_cases.length > 0
+                                    ? liveReport.mo_matches.matched_historical_cases
+                                    : mockMOMatches
+                            }
+                        />
                     </section>
 
-                    {/* 12. CRIME RECONSTRUCTION THEORIES */}
+                    {/* 12. CRIME THEORIES */}
                     <section id="theories" className="scroll-mt-4">
-                        <TheoryBoard onJumpToLead={scrollToSection} />
+                        <TheoryBoard
+                            data={
+                                liveReport?.theories && liveReport.theories.length > 0
+                                    ? liveReport.theories
+                                    : mockTheories
+                            }
+                            onJumpToLead={scrollToSection}
+                        />
                     </section>
 
                     {/* 13. INVESTIGATIVE BRIEF */}
-                    <section id="investigative-brief" className="rounded-xl border border-surface-300 bg-surface-100 p-6 shadow-sm scroll-mt-4 space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-surface-200/80 pb-3">
+                    <section id="investigative-brief" className="panel p-5 shadow-sm scroll-mt-4 space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-surface-200/50 pb-3">
                             <div>
-                                <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
-                                    <Icon name="file-text" size={16} className="text-insignia-400" />
+                                <h3 className="text-sm font-bold text-surface-900 tracking-tight flex items-center gap-2">
+                                    <span className="text-[10px] font-mono text-surface-500 font-medium">13</span>
+                                    <Icon name="file-text" size={14} className="text-insignia-400" />
                                     <span>Investigative Brief & Judicial Narrative</span>
                                 </h3>
-                                <p className="text-xs text-surface-500 mt-0.5">
-                                    Cited natural-language brief compliant with Section 105 of the Bharatiya Sakshya Adhiniyam (BSA), 2023.
+                                <p className="text-[10px] text-surface-500 mt-0.5 ml-[52px]">
+                                    Cited brief compliant with Section 105, Bharatiya Sakshya Adhiniyam (BSA), 2023.
                                 </p>
                             </div>
 
                             <button
                                 type="button"
                                 onClick={() => alert("Dossier exported to BSA-2023 certified PDF with SHA-256 cryptographic chain-of-custody seal.")}
-                                className="inline-flex items-center gap-2 rounded-lg border border-insignia-500/40 bg-insignia-500/10 hover:bg-insignia-500/20 text-insignia-300 px-3.5 py-1.5 text-xs font-mono font-bold transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1.5 rounded-md border border-insignia-500/30 bg-insignia-500/10 hover:bg-insignia-500/20 text-insignia-300 px-3 py-1.5 text-[10px] font-mono font-bold transition-colors cursor-pointer"
                             >
-                                <Icon name="shield" size={13} />
+                                <Icon name="shield" size={11} />
                                 <span>Export BSA-2023 Document</span>
                             </button>
                         </div>
 
-                        {/* Paragraph Narrative with Per-Sentence Clickable Citations */}
-                        <div className="bg-surface-0/70 border border-surface-300 rounded-xl p-5 text-sm text-surface-800 leading-relaxed space-y-3 font-sans">
+                        {/* Narrative */}
+                        <div className="bg-surface-0/50 border border-surface-300/50 rounded-lg p-4 text-xs text-surface-700 leading-relaxed space-y-3 font-sans">
                             <p>
                                 <SourceCitationPopover
                                     source={{
@@ -583,20 +684,20 @@ export default function CaseView() {
                             </p>
                         </div>
 
-                        {/* Expandable LLM Reasoning Trace */}
+                        {/* Reasoning Trace */}
                         <div>
                             <button
                                 type="button"
                                 onClick={() => setShowReasoningTrace(!showReasoningTrace)}
-                                className="inline-flex items-center gap-1.5 text-xs font-mono text-insignia-400 hover:text-insignia-300 font-bold transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1.5 text-[10px] font-mono text-insignia-400 hover:text-insignia-300 font-bold transition-colors cursor-pointer"
                             >
-                                <Icon name="terminal" size={13} />
-                                <span>{showReasoningTrace ? "Hide AI Reasoning Trace" : "Show AI Reasoning Trace (Chain-of-Thought)"}</span>
-                                <Icon name="chevron-down" size={12} className={`transition-transform ${showReasoningTrace ? "rotate-180" : ""}`} />
+                                <Icon name="terminal" size={11} />
+                                <span>{showReasoningTrace ? "Hide AI Reasoning Trace" : "Show AI Reasoning Trace"}</span>
+                                <Icon name="chevron-down" size={10} className={`transition-transform ${showReasoningTrace ? "rotate-180" : ""}`} />
                             </button>
 
                             {showReasoningTrace && (
-                                <div className="mt-3 rounded-xl border border-surface-300 bg-surface-0 p-4 font-mono text-xs text-insignia-300/90 leading-relaxed space-y-1.5 shadow-inner">
+                                <div className="mt-2 rounded-lg border border-surface-300/50 bg-surface-0 p-3 font-mono text-[10px] text-insignia-300/80 leading-relaxed space-y-1 animate-fade-in">
                                     <div>[Step 1] Entity Extraction: NER model extracted 24 named candidates across FIR text and seizure memo.</div>
                                     <div>[Step 2] Identity Disambiguation: Resolved 'Rajesh K. Sharma' to primary suspect node (score: 94%).</div>
                                     <div>[Step 3] Graph Synthesis: Constructed multi-partite graph linking HDFC, ICICI, Apex Logistics, and BTC Wallet.</div>
@@ -607,34 +708,31 @@ export default function CaseView() {
                         </div>
                     </section>
 
-                    {/* 14. AUDIT & CONFIDENCE PANEL */}
-                    <section id="audit-log" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-3">
-                        <div className="border-b border-surface-200/80 pb-3">
-                            <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
-                                <Icon name="check-circle" size={16} className="text-emerald-400" />
-                                <span>Audit & Confidence Ledger — "Leads Not Verdicts"</span>
-                            </h3>
-                            <p className="text-xs text-surface-500 mt-0.5">
-                                Transparent audit log of algorithmic merges, anomaly detections, and human verifications.
-                            </p>
-                        </div>
+                    {/* 14. AUDIT & CONFIDENCE */}
+                    <section id="audit-log" className="panel p-4 shadow-sm scroll-mt-4 space-y-3">
+                        <SectionHeader
+                            num="14"
+                            icon="check-circle"
+                            title='Audit & Confidence — "Leads Not Verdicts"'
+                            subtitle="Transparent audit log of algorithmic merges, anomaly detections, and human verifications."
+                        />
 
-                        <div className="space-y-2 font-mono text-xs">
+                        <div className="space-y-1.5 font-mono text-[10px]">
                             {mockAuditLog.map((log) => (
                                 <div
                                     key={log.id}
-                                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg border border-surface-300 bg-surface-0/60"
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 p-2 rounded-md border border-surface-300/50 bg-surface-0/40"
                                 >
-                                    <div className="flex items-center gap-2.5">
-                                        <span className="text-insignia-400 font-bold shrink-0">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-insignia-400 font-bold shrink-0 tabular-nums">
                                             {new Date(log.timestamp).toLocaleTimeString()}
                                         </span>
-                                        <span className="text-surface-800 font-bold">{log.action}:</span>
-                                        <span className="text-surface-600">{log.description}</span>
+                                        <span className="text-surface-700 font-bold">{log.action}:</span>
+                                        <span className="text-surface-500">{log.description}</span>
                                     </div>
-                                    <div className="flex items-center gap-2.5 shrink-0">
+                                    <div className="flex items-center gap-2 shrink-0">
                                         <ConfidenceBadge score={log.confidence} size="sm" />
-                                        <span className="text-[10px] bg-surface-200 px-2 py-0.5 rounded text-surface-400">
+                                        <span className="text-[9px] bg-surface-200/60 px-1.5 py-0.5 rounded text-surface-500">
                                             {log.status}
                                         </span>
                                     </div>
@@ -651,7 +749,7 @@ export default function CaseView() {
                 />
             </div>
 
-            {/* Delta Ingestion Slide-Over Modal */}
+            {/* Delta Ingestion Modal */}
             <DeltaIngestionModal
                 caseId={caseData.id}
                 isOpen={isDeltaModalOpen}

@@ -40,22 +40,22 @@ export default function Workspace() {
     if (!selectedCaseId) {
         return (
             <main className="flex min-w-0 flex-1 items-center justify-center bg-surface-0 p-6">
-                <div className="text-center rounded-2xl border border-surface-300 bg-surface-100 p-12 shadow-xl max-w-md">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-200 border border-surface-300 text-surface-400">
-                        <Icon name="folder" size={26} />
+                <div className="text-center max-w-sm">
+                    <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-surface-100 border border-surface-300/50 text-surface-400">
+                        <Icon name="shield" size={24} />
                     </div>
-                    <h2 className="text-lg font-bold text-surface-900">
-                        Select an Operational Case
+                    <h2 className="text-base font-bold text-surface-900">
+                        Select an Investigation
                     </h2>
-                    <p className="mt-2 text-xs text-surface-500 leading-relaxed font-mono">
-                        Choose a case from the sidebar directory to view its evidentiary files, summary fact-sheet, and topological overview.
+                    <p className="mt-2 text-xs text-surface-500 leading-relaxed">
+                        Choose a case from the directory to access evidentiary files, intelligence graph, and fact-sheet analysis.
                     </p>
                     <Link
                         to="/intake"
-                        className="mt-6 inline-flex items-center gap-2 rounded-lg bg-insignia-500 hover:bg-insignia-400 text-surface-0 font-bold px-4 py-2 text-xs transition-colors shadow"
+                        className="mt-6 inline-flex items-center gap-2 rounded-md bg-insignia-500/90 hover:bg-insignia-400 text-surface-0 font-bold px-4 py-2 text-xs transition-colors"
                     >
-                        <Icon name="plus" size={13} />
-                        <span>Initiate New Evidence Intake</span>
+                        <Icon name="plus" size={12} />
+                        <span>Initiate Evidence Intake</span>
                     </Link>
                 </div>
             </main>
@@ -66,13 +66,13 @@ export default function Workspace() {
 
     return (
         <>
-            <main className="min-w-0 flex-1 overflow-y-auto bg-surface-0 p-6 lg:p-8 space-y-6">
-                {/* ── Case Metadata & Action Header ─────────── */}
-                <div className="rounded-xl border border-surface-300 bg-surface-100 p-6 shadow-sm">
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <main className="min-w-0 flex-1 overflow-y-auto bg-surface-0 p-5 lg:p-6 space-y-5">
+                {/* ── Case Header ─────────── */}
+                <div className="panel p-5">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                         <div className="space-y-2">
                             <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-bold text-surface-900 tracking-tight">
+                                <h1 className="text-lg font-bold text-surface-900 tracking-tight leading-tight">
                                     {selectedCase?.name ?? "Case Workspace"}
                                 </h1>
                                 <TrackBadge
@@ -80,57 +80,57 @@ export default function Workspace() {
                                     triageReason={selectedCase?.triage_reason}
                                 />
                             </div>
-                            <div className="flex items-center gap-4 text-xs font-mono text-surface-500">
+                            <div className="flex items-center gap-3 text-[10px] font-mono text-surface-500">
                                 <span>
                                     {documents.length} {documents.length === 1 ? "document" : "documents on file"}
                                 </span>
-                                <span>•</span>
+                                <span className="text-surface-400/40">│</span>
                                 <span>Version {selectedCase?.version || 1}.0</span>
                             </div>
                         </div>
 
-                        {/* Open Full Dashboard CTA for Track 2 */}
+                        {/* CTA for Track 2 */}
                         {isTrack2 && (
                             <Link
                                 to={`/cases/${selectedCaseId}`}
-                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-insignia-500 hover:bg-insignia-400 text-surface-0 font-bold px-5 py-2.5 text-xs transition-all shadow-md shadow-insignia-500/20 cursor-pointer shrink-0"
+                                className="inline-flex items-center justify-center gap-2 rounded-md bg-insignia-500/90 hover:bg-insignia-400 text-surface-0 font-bold px-4 py-2 text-xs transition-all shrink-0"
                             >
-                                <Icon name="radar" size={14} />
-                                <span>Open Full Analysis Workspace</span>
-                                <Icon name="arrow-right" size={14} />
+                                <Icon name="radar" size={13} />
+                                <span>Open Full Analysis</span>
+                                <Icon name="arrow-right" size={13} />
                             </Link>
                         )}
                     </div>
                     
-                    <p className="text-xs text-surface-600 leading-relaxed mt-4 pt-4 border-t border-surface-200">
+                    <p className="text-xs text-surface-600 leading-relaxed mt-3 pt-3 border-t border-surface-200/50">
                         {selectedCase?.triage_reason ||
                             "This case investigates organized financial and telecommunication irregularities. Multi-modality pipelines correlate extracted entities across banking ledgers and surveillance records."}
                     </p>
                 </div>
 
-                {/* ── Network Graph Slim Preview (Unified Graph) ──────────── */}
-                <div className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm space-y-3">
+                {/* ── Network Graph Preview ──────────── */}
+                <div className="panel p-5 space-y-3">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-surface-900 flex items-center gap-2">
-                                <Icon name="network-graph" size={15} className="text-insignia-400" />
-                                <span>Case Knowledge Graph Preview</span>
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-surface-800 flex items-center gap-2">
+                                <Icon name="network-graph" size={13} className="text-insignia-400" />
+                                <span>Knowledge Graph Preview</span>
                             </h3>
-                            <p className="text-xs text-surface-500 mt-0.5">
+                            <p className="text-[10px] text-surface-500 mt-0.5 font-mono">
                                 Real-time topological rendering of primary suspect interactions.
                             </p>
                         </div>
                         {isTrack2 && (
                             <Link
                                 to={`/cases/${selectedCaseId}#knowledge-graph`}
-                                className="text-xs font-mono text-insignia-400 hover:underline"
+                                className="text-[10px] font-mono text-insignia-400 hover:text-insignia-300 transition-colors"
                             >
-                                Full Screen Interactive Graph →
+                                Full Interactive Graph →
                             </Link>
                         )}
                     </div>
 
-                    <div className="h-[360px] w-full">
+                    <div className="h-[340px] w-full">
                         <NetworkGraph
                             data={mockFinancialTracing}
                             theme="digital"
@@ -140,22 +140,22 @@ export default function Workspace() {
                 </div>
 
                 {/* ── Documents List ────────────────── */}
-                <div className="rounded-xl border border-surface-300 bg-surface-100 p-6 shadow-sm">
+                <div className="panel p-5">
                     <div className="mb-4 flex items-center justify-between">
                         <div>
-                            <h2 className="text-sm font-bold uppercase tracking-wider text-surface-900">
+                            <h2 className="text-xs font-bold uppercase tracking-wider text-surface-800">
                                 Case Evidence Files
                             </h2>
-                            <p className="text-xs text-surface-500 mt-0.5 font-mono">
+                            <p className="text-[10px] text-surface-500 mt-0.5 font-mono">
                                 Uploaded digital and scanned exhibits
                             </p>
                         </div>
                         <button
                             type="button"
                             onClick={() => setShowUpload(true)}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-insignia-500 hover:bg-insignia-400 text-surface-0 font-bold px-3 py-1.5 text-xs transition-colors shadow"
+                            className="inline-flex items-center gap-1.5 rounded-md bg-insignia-500/90 hover:bg-insignia-400 text-surface-0 font-bold px-3 py-1.5 text-[11px] transition-colors"
                         >
-                            <Icon name="upload" size={13} />
+                            <Icon name="upload" size={12} />
                             <span>Upload Exhibit</span>
                         </button>
                     </div>
@@ -163,12 +163,12 @@ export default function Workspace() {
                     {isLoading && <Loader label="Loading exhibits…" />}
 
                     {error && !isLoading && (
-                        <div className="rounded-xl border border-surface-300 bg-surface-0 p-6">
-                            <p className="text-sm text-red-400 font-mono">{error}</p>
+                        <div className="rounded-lg border border-surface-300/50 bg-surface-0 p-4">
+                            <p className="text-xs text-red-400 font-mono">{error}</p>
                             <button
                                 type="button"
                                 onClick={() => fetchDocuments(selectedCaseId)}
-                                className="mt-2 text-xs text-surface-400 underline hover:text-white"
+                                className="mt-2 text-[10px] text-surface-500 underline hover:text-surface-300"
                             >
                                 Retry
                             </button>
@@ -180,8 +180,8 @@ export default function Workspace() {
                     )}
                 </div>
 
-                {/* ── Persistent Embedded Fact Sheet (Document Requirement §3.7) ────────── */}
-                <div className="pt-2">
+                {/* ── Embedded Fact Sheet ────────── */}
+                <div className="pt-1">
                     <FactSheet
                         data={{
                             ...mockFactSheet,
