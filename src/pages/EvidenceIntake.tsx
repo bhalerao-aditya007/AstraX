@@ -9,54 +9,56 @@ import EvidenceChannelCard, {
 import Icon from "../components/ui/Icon";
 import { useCasesStore } from "../store/casesStore";
 import { initiateUpload, uploadToStorage, confirmUpload } from "../services/upload";
+import { getDocument } from "../services/documents";
 import { triggerHistoricalAnalysis } from "../services/analytics";
 import type { DocumentType } from "../services/documents";
+import { SAMPLE_FIR_TEXT, SAMPLE_CSV_TEXT } from "../utils/factSheetSynthesizer";
 
 const CHANNELS: ChannelConfig[] = [
     {
         id: "fir_text",
-        title: "FIR / Case Text (Digital)",
+        title: "FIR & Complaints",
         icon: "file-text",
-        accepts: ".json,.txt,.docx",
-        acceptsLabel: ".json (IIF-1), .txt, .docx",
-        pipelineNote: "Digitized CAS/e-FIR export — parsed via schema-aware parser, not OCR.",
-        limits: "Demo limit: 5 files / 50MB",
+        accepts: ".txt,.pdf,.json",
+        acceptsLabel: ".txt, .pdf, .json",
+        pipelineNote: "BNS / BNSS statutory mapping - entities, sections, timestamps extracted via LLM/NER.",
+        limits: "Schema: Standard CAS / CCTNS compliant",
     },
     {
         id: "scanned_doc",
-        title: "Scanned FIR / Seizure Memos",
+        title: "Seizure Memos & Panchnamas",
         icon: "evidence-tag",
-        accepts: ".jpg,.png,.pdf",
+        accepts: ".pdf,.jpg,.png",
         acceptsLabel: ".pdf, .jpg, .png",
-        pipelineNote: "Layout-aware OCR, table extraction, and handwriting routed separately.",
-        limits: "Demo limit: 10 pages / 100MB",
+        pipelineNote: "Tesseract OCR / LayoutLM - extracts tabular seizure ledgers and witness signatures.",
+        limits: "Max 50MB per file",
     },
     {
         id: "cctv_video",
-        title: "CCTV / Video Evidence",
+        title: "CCTV & Video Feeds",
         icon: "video-cctv",
-        accepts: ".mp4,.mov",
-        acceptsLabel: ".mp4, .mov",
-        pipelineNote: "Detection + Re-ID + ANPR — processed via cached GPU inference pipeline.",
-        limits: "Demo limit: 500MB / max 30 mins",
+        accepts: ".mp4,.avi,.mov",
+        acceptsLabel: ".mp4, .avi, .mov",
+        pipelineNote: "YOLOv8 + ByteTrack - person/vehicle tracking, ANPR plate extraction, geo-scene tag.",
+        limits: "Max 500MB per clip",
     },
     {
         id: "audio_recordings",
-        title: "Audio / Intercept Wiretaps",
+        title: "Audio & Wiretap Intercepts",
         icon: "audio-mic",
-        accepts: ".mp3,.wav",
-        acceptsLabel: ".mp3, .wav",
-        pipelineNote: "ASR speech-to-text + multilingual diarization for Hindi, English & dialects.",
-        limits: "Demo limit: 100MB per audio file",
+        accepts: ".wav,.mp3,.m4a",
+        acceptsLabel: ".wav, .mp3, .m4a",
+        pipelineNote: "Whisper ASR - multi-speaker diarization, Hinglish dialect translation, keyword alerts.",
+        limits: "Supported formats: 16kHz mono WAV preferred",
     },
     {
         id: "cdr_financial",
-        title: "CDR / Bank Statements",
+        title: "Bank Statements & CDR",
         icon: "cdr-table",
-        accepts: ".csv,.xlsx",
-        acceptsLabel: ".csv, .xlsx",
-        pipelineNote: "Structuring detection (sub-₹50k smurfing), pass-through velocity, and tower triangulation.",
-        limits: "Demo limit: 50,000 transaction rows",
+        accepts: ".csv,.xlsx,.xml",
+        acceptsLabel: ".csv, .xlsx, .xml",
+        pipelineNote: "GNN Structuring Detector - flags sub-Rs 50k smurfing, peel-chains, burner IMEI churn.",
+        limits: "Standard bank format (CSV/XLSX)",
     },
     {
         id: "image_bio",
@@ -64,63 +66,47 @@ const CHANNELS: ChannelConfig[] = [
         icon: "image-bio",
         accepts: ".jpg,.png",
         acceptsLabel: ".jpg, .png",
-        pipelineNote: "Facial/plate detection — biometric identity claims routed externally, never confirmed in-app.",
+        pipelineNote: "Facial/plate detection - biometric identity claims routed externally, never confirmed in-app.",
         limits: "Demo limit: 20 high-res photos",
     },
 ];
 
-const SAMPLE_LOGS = [
-    "[System] AstraX Multi-Modality Ingestion Gateway initialized.",
-    "[Ingest] Dispatching payload across 6 parallel model adapters...",
-    "[Parser] Channel 1: Schema-aware CAS parser extracted 14 entities and BNS legal sections.",
-    "[OCR] Channel 2: Tesseract/LayoutLM parsed Seizure Panchnama with 94.2% character confidence.",
-    "[Vision] Channel 3: ANPR neural network identified plate 'DL-4C-9981' on 3 consecutive frames.",
-    "[ASR] Channel 4: Whisper-Hindi diarized 2 distinct speakers on Wiretap Intercept #9871.",
-    "[Graph] Cross-referencing telephone tower DEL-442 coordinates with ATM withdrawal timestamps...",
-    "[Triage] Case complexity evaluated: Multi-jurisdiction syndicate detected. Assigning Track 2.",
-    "[Complete] Extraction summary ready. Redirecting to Stage 5 Case Fact-Sheet..."
-];
+function createSampleQueue(): Record<string, ChannelFile[]> {
+    return {
+        fir_text: [
+            {
+                id: "sample-fir-1",
+                file: new File([SAMPLE_FIR_TEXT], "FIR_108_2026_KashmereGate.txt", { type: "text/plain" }),
+                name: "FIR_108_2026_KashmereGate.txt",
+                size: SAMPLE_FIR_TEXT.length,
+                status: "queued",
+                progress: 0,
+            },
+        ],
+        scanned_doc: [],
+        cctv_video: [],
+        audio_recordings: [],
+        cdr_financial: [
+            {
+                id: "sample-csv-1",
+                file: new File([SAMPLE_CSV_TEXT], "Axis_Bank_Structuring_4901.csv", { type: "text/csv" }),
+                name: "Axis_Bank_Structuring_4901.csv",
+                size: SAMPLE_CSV_TEXT.length,
+                status: "queued",
+                progress: 0,
+            },
+        ],
+        image_bio: [],
+    };
+}
 
 export default function EvidenceIntake() {
     const navigate = useNavigate();
     const createCase = useCasesStore((state) => state.createCase);
 
-    const [caseTitle, setCaseTitle] = useState("FIR 101/2026: Apex Financial Syndicate");
-    const [channelFiles, setChannelFiles] = useState<Record<string, ChannelFile[]>>({
-        fir_text: [
-            {
-                id: "init-1",
-                file: new File(["{}"], "FIR_101_2026_cas_export.json", { type: "application/json" }),
-                name: "FIR_101_2026_cas_export.json",
-                size: 142000,
-                status: "queued",
-                progress: 100,
-            }
-        ],
-        scanned_doc: [
-            {
-                id: "init-2",
-                file: new File([""], "seizure_memo_okhla_raid.pdf", { type: "application/pdf" }),
-                name: "seizure_memo_okhla_raid.pdf",
-                size: 2450000,
-                status: "queued",
-                progress: 100,
-            }
-        ],
-        cctv_video: [],
-        audio_recordings: [],
-        cdr_financial: [
-            {
-                id: "init-3",
-                file: new File([""], "hdfc_statement_9901.xlsx", { type: "application/vnd.ms-excel" }),
-                name: "hdfc_statement_9901.xlsx",
-                size: 480000,
-                status: "queued",
-                progress: 100,
-            }
-        ],
-        image_bio: [],
-    });
+    const [isSampleMode, setIsSampleMode] = useState(true);
+    const [caseTitle, setCaseTitle] = useState("FIR 108/2026: Kashmere Gate Syndicate");
+    const [channelFiles, setChannelFiles] = useState<Record<string, ChannelFile[]>>(createSampleQueue);
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [streamedLogs, setStreamedLogs] = useState<string[]>([]);
@@ -128,7 +114,42 @@ export default function EvidenceIntake() {
     const totalFiles = Object.values(channelFiles).reduce((sum, list) => sum + list.length, 0);
     const activeChannels = Object.values(channelFiles).filter((list) => list.length > 0).length;
 
+    const handleClearQueue = () => {
+        setChannelFiles({
+            fir_text: [],
+            scanned_doc: [],
+            cctv_video: [],
+            audio_recordings: [],
+            cdr_financial: [],
+            image_bio: [],
+        });
+        setCaseTitle("");
+        setIsSampleMode(false);
+    };
+
+    const handleLoadSampleQueue = () => {
+        setChannelFiles(createSampleQueue());
+        setCaseTitle("FIR 108/2026: Kashmere Gate Syndicate");
+        setIsSampleMode(true);
+    };
+
     const handleFilesAdded = (channelId: string, newFiles: File[]) => {
+        let currentFiles = channelFiles;
+        if (isSampleMode) {
+            currentFiles = {
+                fir_text: [],
+                scanned_doc: [],
+                cctv_video: [],
+                audio_recordings: [],
+                cdr_financial: [],
+                image_bio: [],
+            };
+            setIsSampleMode(false);
+            if (!caseTitle || caseTitle.includes("108/2026")) {
+                setCaseTitle(newFiles[0]?.name.replace(/\.[^/.]+$/, "") || "Custom Investigation");
+            }
+        }
+
         const addedItems: ChannelFile[] = newFiles.map((f) => ({
             id: crypto.randomUUID(),
             file: f,
@@ -138,10 +159,10 @@ export default function EvidenceIntake() {
             progress: 0,
         }));
 
-        setChannelFiles((prev) => ({
-            ...prev,
-            [channelId]: [...(prev[channelId] || []), ...addedItems],
-        }));
+        setChannelFiles({
+            ...currentFiles,
+            [channelId]: [...(currentFiles[channelId] || []), ...addedItems],
+        });
     };
 
     const handleFileRemoved = (channelId: string, fileId: string) => {
@@ -155,66 +176,114 @@ export default function EvidenceIntake() {
         if (totalFiles === 0) return;
 
         setIsProcessing(true);
-        setStreamedLogs(["[System] AstraX Multi-Modality Ingestion Gateway initialized."]);
+        setStreamedLogs([
+            "[System] AstraX Multi-Modality Ingestion Gateway initialized.",
+            isSampleMode
+                ? "[Demo Mode] Ingesting authentic queued benchmark evidence (FIR 108/2026 BNS §111)."
+                : "[Live Ingestion] Ingesting user-submitted evidentiary files through neural pipeline.",
+        ]);
 
-        // Create new case in store or fallback to case-1
         let targetCaseId = "case-1";
         try {
             const newCase = await createCase({
-                name: caseTitle.trim() || "New Ingested Investigation",
+                name: caseTitle.trim() || (isSampleMode ? "FIR 108/2026: Kashmere Gate Syndicate" : "New Ingested Investigation"),
                 track: 2,
-                triage_reason: "Multi-channel ingestion completed: 6 evidence streams merged.",
+                triage_reason: "Multi-channel ingestion completed: live evidence streams merged into knowledge graph.",
             });
             targetCaseId = newCase.id;
+            setStreamedLogs((prev) => [
+                ...prev,
+                `[Case Registered] Created case record: ${newCase.name} (ID: ${targetCaseId})`,
+            ]);
         } catch {
             targetCaseId = "case-1";
+            setStreamedLogs((prev) => [
+                ...prev,
+                `[Target Case] Using workspace case: ${targetCaseId}`,
+            ]);
         }
 
-        // Upload queued files to backend and S3 storage
+        const uploadedDocIds: { id: string; name: string; type: DocumentType }[] = [];
+
         for (const [channelId, fileList] of Object.entries(channelFiles)) {
             const docType: DocumentType =
                 channelId === "cctv_video"
                     ? "video"
                     : channelId === "audio_recordings"
                     ? "voice"
-                    : channelId === "scanned_doc" || channelId === "image_bio"
+                    : channelId === "image_bio"
                     ? "image"
                     : "text";
 
             for (const item of fileList) {
                 if (item.file && item.file.size > 0) {
-                    setStreamedLogs((prev) => [
-                        ...prev,
-                        `[Upload] Ingesting ${item.name} (${docType})...`,
-                    ]);
                     try {
-                        const { document_id, upload_url } = await initiateUpload({
+                        setStreamedLogs((prev) => [
+                            ...prev,
+                            `[Ingest] Uploading ${item.name} (${(item.size / 1024).toFixed(1)} KB)...`,
+                        ]);
+
+                        const initRes = await initiateUpload({
                             case_id: targetCaseId,
                             title: item.name,
-                            description: `Intake matrix upload from ${channelId}`,
+                            description: `Uploaded via AstraX Intake Channel: ${channelId}`,
                             file_name: item.name,
                             document_type: docType,
                         });
-                        await uploadToStorage(upload_url, item.file);
-                        await confirmUpload(document_id, true);
+
+                        if (initRes.upload_url) {
+                            await uploadToStorage(initRes.upload_url, item.file);
+                        }
+
+                        const confirmedDoc = await confirmUpload(initRes.document_id, true);
+                        uploadedDocIds.push({ id: confirmedDoc.id, name: item.name, type: docType });
+
                         setStreamedLogs((prev) => [
                             ...prev,
-                            `[Confirmed] ${item.name} registered into pipeline (Doc ID: ${document_id.slice(0, 8)}...).`,
+                            `[Confirmed] ${item.name} registered into pipeline (Doc ID: ${confirmedDoc.id.slice(0, 8)}...).`,
                         ]);
-                    } catch {
+                    } catch (err: any) {
                         setStreamedLogs((prev) => [
                             ...prev,
-                            `[Note] Ingesting cached specimen for ${item.name}`,
+                            `[Error] Ingestion failed for ${item.name}: ${err?.message || "Storage error"}`,
                         ]);
                     }
                 }
             }
         }
 
-        // Stream model telemetry output
-        for (let i = 1; i < SAMPLE_LOGS.length; i++) {
-            await new Promise((r) => setTimeout(r, 350));
-            setStreamedLogs((prev) => [...prev, SAMPLE_LOGS[i]]);
+        // Telemetry polling for real document completion
+        if (uploadedDocIds.length > 0) {
+            setStreamedLogs((prev) => [
+                ...prev,
+                `[Inference] Polling model telemetry for ${uploadedDocIds.length} documents...`,
+            ]);
+
+            for (const docInfo of uploadedDocIds) {
+                let attempts = 0;
+                while (attempts < 6) {
+                    try {
+                        const statusDoc = await getDocument(docInfo.id);
+                        if (statusDoc.status === "finish" || statusDoc.status === "success") {
+                            setStreamedLogs((prev) => [
+                                ...prev,
+                                `[Telemetry] ${docInfo.name}: Processing status "${statusDoc.status}".`,
+                            ]);
+                            break;
+                        } else if (statusDoc.status === "failed") {
+                            setStreamedLogs((prev) => [
+                                ...prev,
+                                `[Telemetry] ${docInfo.name}: Processor reported failure (check server logs).`,
+                            ]);
+                            break;
+                        }
+                    } catch {
+                        // ignore polling error
+                    }
+                    attempts++;
+                    await new Promise((r) => setTimeout(r, 800));
+                }
+            }
         }
 
         try {
@@ -227,8 +296,13 @@ export default function EvidenceIntake() {
             // Graceful fallback
         }
 
-        await new Promise((r) => setTimeout(r, 600));
-        navigate(`/intake/${targetCaseId}/summary`);
+        setStreamedLogs((prev) => [
+            ...prev,
+            "[Complete] Forensic pipeline execution finished. Redirecting to Stage 5 Fact-Sheet...",
+        ]);
+
+        await new Promise((r) => setTimeout(r, 1200));
+        navigate(`/cases/${targetCaseId}/summary`);
     };
 
     return (
@@ -251,7 +325,7 @@ export default function EvidenceIntake() {
                             Evidence Ingestion Matrix
                         </h1>
                         <p className="mt-2 text-sm text-surface-600 leading-relaxed">
-                            Files are parsed per-modality via isolated domain adapters, cross-referenced across telecommunications, banking, and field recovery data, and unified into one case record. You will review a consolidated extraction summary before full link analysis runs.
+                            Files are parsed per-modality via isolated domain adapters, cross-referenced across telecommunications, banking, and field recovery data, and unified into one case record.
                         </p>
                     </div>
 
@@ -263,10 +337,57 @@ export default function EvidenceIntake() {
                         <input
                             type="text"
                             value={caseTitle}
-                            onChange={(e) => setCaseTitle(e.target.value)}
-                            placeholder="e.g. FIR 101/2026 PS Special Cell"
+                            onChange={(e) => {
+                                setCaseTitle(e.target.value);
+                                setIsSampleMode(false);
+                            }}
+                            placeholder="e.g. FIR 108/2026 PS Kashmere Gate"
                             className="w-full rounded-lg border border-surface-300 bg-surface-100 px-3 py-2 text-sm text-surface-900 font-mono focus:border-insignia-500 focus:outline-none focus:ring-1 focus:ring-insignia-500 shadow-inner"
                         />
+                    </div>
+                </div>
+
+                {/* Mode Alert & Quick Actions Bar */}
+                <div className="rounded-xl border border-surface-300 bg-surface-100 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-lg ${isSampleMode ? "bg-amber-500/15 text-amber-400 border border-amber-500/30" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"}`}>
+                            <Icon name={isSampleMode ? "radar" : "file-text"} size={18} />
+                        </div>
+                        <div>
+                            <h3 className="text-xs font-bold text-surface-900 uppercase tracking-wider flex items-center gap-2">
+                                <span>{isSampleMode ? "Queued Benchmark Evidence Loaded (Demo Ready)" : "Custom Evidence Ingestion Active"}</span>
+                                <span className={`text-[10px] font-mono px-2 py-0.2 rounded ${isSampleMode ? "bg-amber-500/20 text-amber-300" : "bg-emerald-500/20 text-emerald-300"}`}>
+                                    {isSampleMode ? "Sample Queue Active" : "Live User Files"}
+                                </span>
+                            </h3>
+                            <p className="text-xs text-surface-500 mt-0.5">
+                                {isSampleMode
+                                    ? "Authentic FIR 108/2026 text & Axis Bank structuring transactions are pre-staged in the queue. Click 'Run Analysis Pipeline' to test real model inference, or clear queue to drop your own files."
+                                    : "You are uploading custom evidentiary documents. AstraX will process them through real OCR, NER, and GNN extraction pipelines."}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                        {isSampleMode ? (
+                            <button
+                                type="button"
+                                onClick={handleClearQueue}
+                                className="px-3 py-1.5 rounded-lg border border-surface-300 bg-surface-200/70 hover:bg-surface-200 text-surface-700 hover:text-white text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                                <Icon name="refresh" size={13} />
+                                <span>Clear & Upload My Own</span>
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleLoadSampleQueue}
+                                className="px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                                <Icon name="radar" size={13} />
+                                <span>Load Sample Evidence Queue</span>
+                            </button>
+                        )}
                     </div>
                 </div>
 

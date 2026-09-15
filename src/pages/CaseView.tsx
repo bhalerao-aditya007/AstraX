@@ -1,8 +1,9 @@
 // src/pages/CaseView.tsx
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useCasesStore } from "../store/casesStore";
 import { useDocumentsStore } from "../store/documentsStore";
+import { USE_MOCK_API } from "../config";
 import Navbar from "../components/layout/Navbar";
 import DocumentList from "../components/documents/DocumentList";
 import Icon from "../components/ui/Icon";
@@ -35,6 +36,10 @@ import {
     mockPhantomLeads,
     mockTheories,
     mockMOMatches,
+    mockTimeline,
+    mockGeoLocation,
+    mockIdentityResolution,
+    type FactSheetData,
 } from "../data/mockCaseData";
 import {
     triggerHistoricalAnalysis,
@@ -59,29 +64,6 @@ const SCROLLSPY_SECTIONS = [
     { id: "investigative-brief", label: "13. Narrative Brief", icon: "file-text" },
     { id: "audit-log", label: "14. Audit & Confidence", icon: "check-circle" },
 ];
-
-const GNN_SYNTHESIZED_DATA = {
-    nodes: [
-        { id: "ENT-RAJESH", label: "Rajesh Sharma", type: "person", badge: "Primary Suspect", risk_score: 0.95, merge_reason: "Direct KYC & surveillance fingerprint match" },
-        { id: "ENT-VIKRAM", label: "Vikram Malhotra", type: "person", badge: "Associate", risk_score: 0.88, merge_reason: "Co-accused identified in Okhla warehouse seizure" },
-        { id: "ENT-PHONE-9871", label: "Burner +91-9871...", type: "phone", badge: "Evidentiary", risk_score: 0.72, merge_reason: "Tower ping registered in South Delhi DEL-442" },
-        { id: "ENT-BANK-HDFC", label: "HDFC A/C 9901", type: "bank_account", badge: "Laundering Hub", risk_score: 0.91, merge_reason: "Sole signatory mandate confirmed by HDFC compliance" },
-        { id: "ENT-COMPANY-APEX", label: "Apex Logistics LLC", type: "company", badge: "Front Entity", risk_score: 0.85, merge_reason: "Fictitious ROC filing with forged Aadhaar credentials" },
-        { id: "ENT-PERSON-AMIT", label: "Amit Singh", type: "person", badge: "Candidate Financier", risk_score: 0.78, merge_reason: "Beneficial ownership inferred from shared net-banking IP" },
-        { id: "ENT-WALLET-BTC", label: "Wallet 0x8A1...", type: "wallet", badge: "High Risk", risk_score: 0.99, merge_reason: "Wasabi mixer cluster peel-chain tracking" },
-        { id: "PHANTOM-DRIVER", label: "Phantom-Driver", type: "phantom", is_phantom: true, badge: "HYPOTHESIS", risk_score: 0.81, merge_reason: "Masked ATM operator identified at 08:00 AM" },
-    ],
-    edges: [
-        { id: "g-e1", source: "ENT-RAJESH", target: "ENT-VIKRAM", label: "co_accused (142 calls)", color: "#475569", valid_from: "2026-08-01", is_hypothesis: false },
-        { id: "g-e2", source: "ENT-RAJESH", target: "ENT-PHONE-9871", label: "owner", color: "#475569", valid_from: "2026-08-05", is_hypothesis: false },
-        { id: "g-e3", source: "ENT-RAJESH", target: "ENT-BANK-HDFC", label: "signatory", color: "#475569", valid_from: "2024-01-01", is_hypothesis: false },
-        { id: "g-e4", source: "ENT-BANK-HDFC", target: "ENT-COMPANY-APEX", label: "transferred ₹5M", color: "#ef4444", valid_from: "2026-08-10", is_hypothesis: false },
-        { id: "g-e5", source: "ENT-VIKRAM", target: "ENT-COMPANY-APEX", label: "director nominee", color: "#475569", valid_from: "2026-08-20", is_hypothesis: false },
-        { id: "g-e6", source: "ENT-COMPANY-APEX", target: "ENT-WALLET-BTC", label: "launder_path (96%)", color: "#8b5cf6", style: "dashed", is_hypothesis: true, probability: 0.96, valid_from: "2026-08-25", merge_reason: "GNN link prediction based on wallet withdrawal telemetry" },
-        { id: "g-e7", source: "ENT-PERSON-AMIT", target: "ENT-COMPANY-APEX", label: "hidden_owner (92%)", color: "#8b5cf6", style: "dashed", is_hypothesis: true, probability: 0.92, valid_from: "2026-08-28", merge_reason: "Co-occurrence with proxy director on registration IP" },
-        { id: "g-e8", source: "ENT-PHONE-9871", target: "PHANTOM-DRIVER", label: "suspected_relay (84%)", color: "#8b5cf6", style: "dashed", is_hypothesis: true, probability: 0.84, valid_from: "2026-09-04", merge_reason: "Cell tower overlap at ATM transaction minute" },
-    ]
-};
 
 export default function CaseView() {
     const { caseId } = useParams();
@@ -128,9 +110,8 @@ export default function CaseView() {
             if (graph && graph.nodes?.length > 0) {
                 setLiveGraph(graph);
             }
-            setDeltaDiffApplied(true);
-        } catch (err) {
-            console.error("Historical analysis error:", err);
+        } catch {
+            // Error handling
         } finally {
             setIsAnalyzing(false);
         }
@@ -138,204 +119,346 @@ export default function CaseView() {
 
     const caseData = cases.find((c) => c.id === caseId) || {
         id: caseId || "case-1",
-        name: "FIR 101/2026: Apex Financial Syndicate Investigation",
-        track: 2,
-        triage_reason: "Multi-layered syndicate: 4 shell entities, Wasabi crypto mixer cluster, and international burner relays.",
-        version: deltaDiffApplied ? 3 : 2,
+        name: "Active Case Investigation",
+        track: 2 as const,
+        triage_reason: "Evidence ingestion underway.",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
     };
 
-    const liveIdentityData =
-        liveReport?.entities && liveReport.entities.length > 0
-            ? {
-                  target: caseData.name || "Primary Subject",
-                  candidates: liveReport.entities.map((e, idx) => ({
-                      id: e.id || `live-cand-${idx}`,
-                      name: e.name,
-                      confidence: 88,
-                      source: e.source || "Live AstraX NLP Pipeline",
-                      matchingAttributes: e.matchingAttributes || ["Identified in FIR extraction record"],
-                      conflictingAttributes: [] as string[],
-                      reasoning: `Extracted via AstraX live entity resolution pipeline for ${caseData.name}.`,
-                  })),
-              }
-            : undefined;
+    // Synthesize real case Fact Sheet dynamically from uploaded documents
+    const dynamicFactSheet = useMemo<FactSheetData>(() => {
+        const whoList: FactSheetData["who"] = [];
+        const whatList: FactSheetData["what"] = [];
+        const whenList: FactSheetData["when"] = [];
+        const whereList: FactSheetData["where"] = [];
+        const evidenceList: FactSheetData["evidence"] = [];
 
-    // Scrollspy Intersection Observer
-    useEffect(() => {
-        const container = mainScrollRef.current;
-        if (!container) return;
+        documents.forEach((doc, idx) => {
+            const ext = (doc.extracted_information as any) || {};
 
-        const handleScroll = () => {
-            const sectionElements = SCROLLSPY_SECTIONS.map((s) => ({
-                id: s.id,
-                el: document.getElementById(s.id),
-            })).filter((s) => s.el !== null);
+            const modality =
+                doc.document_type === "video"
+                    ? "video_cctv"
+                    : doc.document_type === "voice"
+                    ? "audio"
+                    : doc.document_type === "image"
+                    ? "scanned_doc"
+                    : "digital_text";
 
-            const scrollPosition = container.scrollTop + 160;
+            evidenceList.push({
+                id: doc.id,
+                modality,
+                fileName: doc.title || `Evidence-${idx + 1}`,
+                extractionStatus:
+                    doc.status === "finish" || doc.status === "success"
+                        ? "parsed"
+                        : doc.status === "failed"
+                        ? "failed"
+                        : "partial",
+                confidence: ext.confidence ? Number(ext.confidence) : 0.95,
+                note: ext.transcribed_text
+                    ? `Extracted: ${String(ext.transcribed_text).slice(0, 60)}...`
+                    : `Status: ${doc.status}`,
+            });
 
-            for (let i = sectionElements.length - 1; i >= 0; i--) {
-                const item = sectionElements[i];
-                if (item.el && item.el.offsetTop <= scrollPosition) {
-                    setActiveSection(item.id);
-                    break;
-                }
+            if (Array.isArray(ext.accused)) {
+                ext.accused.forEach((acc: any, aIdx: number) => {
+                    if (acc.name) {
+                        whoList.push({
+                            id: `acc-${idx}-${aIdx}`,
+                            name: acc.name,
+                            role: "Accused",
+                            alias: acc.alias,
+                            citation: {
+                                documentTitle: doc.title,
+                                confidenceScore: 0.95,
+                                rawSnippet: `Accused: ${acc.name}${acc.alias ? ` (${acc.alias})` : ""}`,
+                            },
+                        });
+                    }
+                });
             }
+
+            if (ext.complainant?.name) {
+                whoList.push({
+                    id: `comp-${idx}`,
+                    name: ext.complainant.name,
+                    role: "Complainant",
+                    citation: {
+                        documentTitle: doc.title,
+                        confidenceScore: 0.98,
+                        rawSnippet: `Complainant: ${ext.complainant.name}`,
+                    },
+                });
+            }
+
+            if (Array.isArray(ext.acts_and_sections)) {
+                ext.acts_and_sections.forEach((sec: any) => {
+                    whatList.push({
+                        bnsSection: `${sec.act || "BNS"} ${sec.section || ""}`.trim(),
+                        statuteName: "Statutory Charge",
+                        description: ext.narrative || "Recorded from FIR extraction.",
+                        applicableTo: ext.accused?.[0]?.name || "Accused",
+                        citation: {
+                            documentTitle: doc.title,
+                            confidenceScore: 0.95,
+                        },
+                    });
+                });
+            }
+
+            if (ext.incident_datetime) {
+                whenList.push({
+                    timestamp: ext.incident_datetime,
+                    event: ext.narrative || "Incident reported",
+                    location: ext.police_station || "Jurisdiction",
+                    citation: {
+                        documentTitle: doc.title,
+                        confidenceScore: 0.92,
+                    },
+                });
+            }
+
+            if (ext.police_station || ext.district) {
+                whereList.push({
+                    locationName: `${ext.police_station || ""}, ${ext.district || ""}`.replace(/^, |, $/g, ""),
+                    jurisdiction: ext.district || "State Police",
+                    significance: "Reporting Police Station",
+                    coordinates: [28.6139, 77.2090],
+                    citation: {
+                        documentTitle: doc.title,
+                        confidenceScore: 0.9,
+                    },
+                });
+            }
+        });
+
+        return {
+            caseId: caseData.id,
+            firNumber: caseData.name,
+            track: (caseData.track ?? 2) as 1 | 2,
+            triageReason: caseData.triage_reason || "Multi-channel evidence parsed.",
+            who: whoList,
+            what: whatList,
+            when: whenList,
+            where: whereList,
+            evidence: evidenceList,
+            knownRelationships: [],
+            openGaps: [],
         };
+    }, [documents, caseData.id, caseData.name, caseData.track, caseData.triage_reason]);
 
-        container.addEventListener("scroll", handleScroll, { passive: true });
-        return () => container.removeEventListener("scroll", handleScroll);
-    }, []);
+    const activeFactSheet =
+        liveReport?.fact_sheet ||
+        (documents.length > 0
+            ? dynamicFactSheet
+            : USE_MOCK_API
+            ? mockFactSheet
+            : dynamicFactSheet);
 
-    const scrollToSection = (secId: string) => {
-        const el = document.getElementById(secId);
-        if (el && mainScrollRef.current) {
-            el.scrollIntoView({ behavior: "smooth", block: "start" });
-            setActiveSection(secId);
+    // Dynamic Graph built from actual documents if GNN graph not yet generated
+    const dynamicDocGraph = useMemo<GraphData>(() => {
+        const nodes: GraphData["nodes"] = [];
+        const edges: GraphData["edges"] = [];
+
+        dynamicFactSheet.who.forEach((p) => {
+            nodes.push({
+                id: `node-${p.id}`,
+                label: p.name,
+                type: "person",
+                badge: p.role,
+                risk_score: p.role === "Accused" ? 0.85 : 0.2,
+                merge_reason: p.citation?.rawSnippet || "Extracted from case documents",
+            });
+        });
+
+        documents.forEach((d) => {
+            nodes.push({
+                id: `node-doc-${d.id}`,
+                label: d.title,
+                type: "document",
+                badge: d.document_type.toUpperCase(),
+                risk_score: 0.1,
+            });
+
+            dynamicFactSheet.who.forEach((p) => {
+                edges.push({
+                    id: `edge-${d.id}-${p.id}`,
+                    source: `node-doc-${d.id}`,
+                    target: `node-${p.id}`,
+                    label: "mentions",
+                    color: "#64748b",
+                    style: "solid",
+                });
+            });
+        });
+
+        return { nodes, edges };
+    }, [dynamicFactSheet.who, documents]);
+
+    const activeGraph =
+        liveGraph && liveGraph.nodes?.length > 0
+            ? liveGraph
+            : dynamicDocGraph.nodes.length > 0
+            ? dynamicDocGraph
+            : USE_MOCK_API
+            ? mockFinancialTracing
+            : { nodes: [], edges: [] };
+
+    // Dynamic Locations
+    const dynamicLocations = useMemo(() => {
+        return activeFactSheet.where.map((w, idx) => ({
+            id: `geo-${idx + 1}`,
+            lat: w.coordinates[0],
+            lng: w.coordinates[1],
+            label: w.locationName,
+            timestamp: activeFactSheet.when[idx]?.timestamp || new Date().toISOString(),
+            entity: activeFactSheet.who[0]?.name || caseData.name,
+            type: "incident" as const,
+            details: { jurisdiction: w.jurisdiction, significance: w.significance },
+            citation: w.citation,
+        }));
+    }, [activeFactSheet.where, activeFactSheet.when, activeFactSheet.who, caseData.name]);
+
+    // Dynamic Timeline
+    const dynamicTimelineEvents = useMemo(() => {
+        return activeFactSheet.when.map((w, idx) => ({
+            id: `time-${idx + 1}`,
+            date: w.timestamp.slice(0, 10),
+            time: w.timestamp.slice(11, 16) || "12:00",
+            title: w.event,
+            summary: w.event,
+            type: "incident" as const,
+            confidence: 0.95,
+            primaryEntity: activeFactSheet.who[0]?.name || caseData.name,
+            location: w.location,
+            citation: w.citation,
+        }));
+    }, [activeFactSheet.when, activeFactSheet.who, caseData.name]);
+
+    // Dynamic Identity Resolution
+    const dynamicIdentityData = useMemo(() => {
+        return {
+            target: activeFactSheet.who[0]?.name || caseData.name,
+            candidates: activeFactSheet.who.map((w, idx) => ({
+                id: `cand-${idx + 1}`,
+                name: w.name,
+                confidence: 95,
+                source: w.citation.documentTitle || "Case Evidence",
+                matchingAttributes: [`Role: ${w.role}`, ...(w.alias ? [`Alias: ${w.alias}`] : [])],
+                conflictingAttributes: [],
+                reasoning: `Extracted directly from ${w.citation.documentTitle}`,
+            })),
+        };
+    }, [activeFactSheet.who, caseData.name]);
+
+    const scrollToSection = (sectionId: string) => {
+        const el = document.getElementById(sectionId);
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth" });
+            setActiveSection(sectionId);
         }
     };
 
     return (
-        <div className="flex h-screen flex-col bg-surface-0 font-sans text-surface-700 overflow-hidden">
+        <div className="min-h-screen bg-surface-0 flex flex-col font-sans">
             <Navbar />
 
-            {/* Tactical Grid Background Motif */}
-            <div className="absolute inset-0 bg-tactical-grid opacity-15 pointer-events-none" />
+            {/* Tactical Grid Background */}
+            <div className="absolute inset-0 bg-tactical-grid opacity-20 pointer-events-none" />
 
-            {/* 3-Zone Workspace Shell */}
-            <div className="relative flex min-h-0 flex-1 overflow-hidden z-10">
-                {/* ── ZONE 1: LEFT RAIL (COLLAPSIBLE) ── */}
-                <aside
-                    className={`transition-all duration-300 ease-in-out border-r border-surface-300 bg-surface-100 flex flex-col shrink-0 overflow-hidden ${
-                        isLeftRailOpen ? "w-80 opacity-100" : "w-0 opacity-0 border-none"
-                    }`}
-                >
-                    <div className="w-80 flex flex-col h-full overflow-hidden">
-                        {/* Case Header & Track Badge */}
-                        <div className="p-4 border-b border-surface-200/80 bg-surface-100/90 space-y-3">
-                            <div className="flex items-center justify-between">
-                                <Link
-                                    to="/dashboard"
-                                    className="inline-flex items-center gap-1.5 text-xs font-mono text-surface-400 hover:text-insignia-400 transition-colors"
-                                >
-                                    <Icon name="arrow-left" size={13} />
-                                    <span>Case Directory</span>
-                                </Link>
-                                <span className="font-mono text-[11px] text-insignia-400 font-bold bg-insignia-500/10 px-2 py-0.5 rounded border border-insignia-500/20">
-                                    v{caseData.version || 2}
+            {/* Top Operational Case Bar */}
+            <header className="relative z-10 border-b border-surface-300 bg-surface-100/95 backdrop-blur-md px-4 sm:px-6 py-3">
+                <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <Link
+                            to="/dashboard"
+                            className="p-1.5 rounded-lg border border-surface-300 bg-surface-0 text-surface-400 hover:text-surface-900 transition-colors"
+                        >
+                            <Icon name="arrow-left" size={14} />
+                        </Link>
+
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs text-insignia-400 font-bold uppercase tracking-wider">
+                                    AstraX Live Case File
                                 </span>
+                                <span className="text-surface-300">•</span>
+                                <span className="font-mono text-xs text-surface-500">{caseData.id}</span>
                             </div>
-
-                            <div>
-                                <h1 className="text-sm font-bold text-surface-900 leading-snug line-clamp-2">
-                                    {caseData.name}
-                                </h1>
-                                <div className="mt-2">
-                                    <TrackBadge track={(caseData.track as 1 | 2) || 2} size="sm" />
-                                </div>
-                            </div>
-
-                            {/* Run AI Case Reconstruction Button */}
-                            <button
-                                type="button"
-                                disabled={isAnalyzing}
-                                onClick={handleRunAIAnalysis}
-                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold px-3 py-2 text-xs transition-all shadow-sm cursor-pointer disabled:opacity-50"
-                            >
-                                <Icon name="radar" size={14} />
-                                <span>{isAnalyzing ? "Synthesizing Models..." : "Run AI Case Reconstruction"}</span>
-                            </button>
-
-                            {/* Add New Evidence Button (Delta Ingestion) */}
-                            <button
-                                type="button"
-                                onClick={() => setIsDeltaModalOpen(true)}
-                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-insignia-500 hover:bg-insignia-400 text-surface-0 font-bold px-3 py-2 text-xs transition-all shadow-sm cursor-pointer"
-                            >
-                                <Icon name="upload" size={14} />
-                                <span>Add New Evidence</span>
-                            </button>
-                        </div>
-
-                        {/* Scrollspy Jump-Links */}
-                        <div className="p-3 border-b border-surface-200/80">
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-surface-400 font-bold block mb-2 px-2">
-                                Analysis Jump Links
-                            </span>
-                            <nav className="space-y-0.5 max-h-48 overflow-y-auto pr-1">
-                                {SCROLLSPY_SECTIONS.map((sec) => (
-                                    <button
-                                        key={sec.id}
-                                        type="button"
-                                        onClick={() => scrollToSection(sec.id)}
-                                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-mono text-left transition-colors cursor-pointer ${
-                                            activeSection === sec.id
-                                                ? "bg-insignia-500/15 text-insignia-400 font-bold border-l-2 border-insignia-400"
-                                                : "text-surface-400 hover:text-surface-200 hover:bg-surface-200/50"
-                                        }`}
-                                    >
-                                        <span className="truncate">{sec.label}</span>
-                                    </button>
-                                ))}
-                            </nav>
-                        </div>
-
-                        {/* Case Documents Sub-List */}
-                        <div className="flex-1 overflow-y-auto p-3 flex flex-col">
-                            <div className="flex items-center justify-between mb-2 px-2">
-                                <span className="text-[10px] font-mono uppercase tracking-wider text-surface-400 font-bold">
-                                    Case Evidence Files ({documents.length})
-                                </span>
-                            </div>
-                            <div className="flex-1 overflow-y-auto pr-1">
-                                <DocumentList documents={documents} />
-                            </div>
+                            <h1 className="text-lg font-bold text-surface-900 tracking-tight flex items-center gap-2">
+                                {caseData.name}
+                            </h1>
                         </div>
                     </div>
-                </aside>
 
-                {/* Left Rail Toggle Bar */}
-                <button
-                    type="button"
-                    onClick={() => setIsLeftRailOpen(!isLeftRailOpen)}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-30 flex h-12 w-3.5 items-center justify-center rounded-r bg-surface-200 border border-l-0 border-surface-300 text-surface-400 hover:text-white transition-colors"
-                    title={isLeftRailOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-                >
-                    <Icon name={isLeftRailOpen ? "chevron-right" : "chevron-right"} size={10} className={isLeftRailOpen ? "rotate-180" : ""} />
-                </button>
+                    <div className="flex items-center gap-2.5">
+                        <TrackBadge track={caseData.track ?? 2} size="md" />
 
-                {/* ── ZONE 2: CENTER (CONTINUOUSLY SCROLLABLE MAIN COLUMN) ── */}
-                <main
-                    ref={mainScrollRef}
-                    className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-8 scroll-smooth"
+                        <button
+                            type="button"
+                            onClick={handleRunAIAnalysis}
+                            disabled={isAnalyzing}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-insignia-600 hover:bg-insignia-500 disabled:opacity-50 text-white px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-all cursor-pointer"
+                        >
+                            <Icon name="radar" size={14} className={isAnalyzing ? "animate-spin" : ""} />
+                            <span>{isAnalyzing ? "Synthesizing AI Models..." : "Run AI Analysis"}</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setIsDeltaModalOpen(true)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-surface-300 bg-surface-0 px-3 py-1.5 text-xs font-semibold text-surface-700 hover:bg-surface-50 hover:text-surface-900 transition-colors"
+                        >
+                            <Icon name="network-graph" size={14} className="text-insignia-400" />
+                            <span>Delta Ingestion</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* Main 3-Column Layout */}
+            <div className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto flex overflow-hidden">
+                {/* Left Drawer (Toggleable Evidence Rail) */}
+                <aside
+                    className={`border-r border-surface-300 bg-surface-100/60 transition-all duration-300 shrink-0 flex flex-col ${
+                        isLeftRailOpen ? "w-80" : "w-12 items-center"
+                    }`}
                 >
-                    {/* Delta Ingestion Banner (shown if delta diff was applied) */}
-                    {deltaDiffApplied && (
-                        <div className="rounded-xl border border-emerald-500/50 bg-emerald-950/20 p-4 text-xs text-emerald-300 flex items-start justify-between gap-3 shadow-lg">
-                            <div className="flex items-start gap-2.5">
-                                <Icon name="check-circle" size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                                <div>
-                                    <strong className="block text-sm font-bold text-emerald-200">
-                                        Delta Ingestion Synced (v3 Active)
-                                    </strong>
-                                    <span>
-                                        4 new facts reconciled into Fact-Sheet, Amit Singh beneficial ownership verified, and Crime Theory upgraded to v3.
-                                    </span>
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setDeltaDiffApplied(false)}
-                                className="text-surface-400 hover:text-white text-xs"
-                            >
-                                Dismiss
-                            </button>
+                    <div className="p-3 border-b border-surface-300 flex items-center justify-between">
+                        {isLeftRailOpen && (
+                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-surface-700">
+                                Case Evidence ({documents.length})
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => setIsLeftRailOpen(!isLeftRailOpen)}
+                            className="p-1 rounded text-surface-400 hover:text-surface-700"
+                        >
+                            <Icon name={isLeftRailOpen ? "chevron-down" : "file-text"} size={14} className={isLeftRailOpen ? "rotate-90" : ""} />
+                        </button>
+                    </div>
+
+                    {isLeftRailOpen && (
+                        <div className="flex-1 overflow-y-auto p-3">
+                            <DocumentList
+                                documents={documents}
+                            />
                         </div>
                     )}
+                </aside>
 
+                {/* Center Analytics Spine (Scrollspy Main Content) */}
+                <main
+                    ref={mainScrollRef}
+                    className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-8 scroll-smooth"
+                >
                     {/* 1. FACT SHEET */}
                     <section id="fact-sheet" className="scroll-mt-4">
                         <FactSheet
-                            data={liveReport?.fact_sheet || mockFactSheet}
+                            data={activeFactSheet}
                             caseId={caseData.id}
                             isEmbedded={true}
                             showDiffIndicator={deltaDiffApplied}
@@ -355,36 +478,20 @@ export default function CaseView() {
                                           confidenceScore: lead.score,
                                           status: "open" as const,
                                           dateIdentified: "Live Inference",
-                                          sourceDocument: "AstraX AI Historical Linker",
+                                          sourceDocument: "AstraX Model Linker",
                                           partialAttributes: {
                                               gnn_probability: `${(lead.components.gnn_probability * 100).toFixed(1)}%`,
                                               centrality: `${(lead.components.centrality * 100).toFixed(1)}%`,
                                               mo_similarity: `${(lead.components.mo_similarity * 100).toFixed(1)}%`,
                                           },
-                                          recommendedAction: "Verify cross-case linkage and cell tower overlaps",
+                                          recommendedAction: "Cross-reference vehicle and communication records",
                                       }))
-                                    : mockPhantomLeads
+                                    : USE_MOCK_API
+                                    ? mockPhantomLeads
+                                    : []
                             }
                             onSelectLead={(lead) => {
-                                setSelectedItem({
-                                    id: lead.id,
-                                    name: lead.title,
-                                    type: `phantom_${lead.phantomType}`,
-                                    confidence: lead.confidenceScore,
-                                    details: {
-                                        status: lead.status,
-                                        recommendedAction: lead.recommendedAction,
-                                        identifiedDate: lead.dateIdentified,
-                                        ...lead.partialAttributes,
-                                    },
-                                    citation: {
-                                        documentTitle: lead.sourceDocument,
-                                        confidenceScore: lead.confidenceScore,
-                                        pageOrOffset: "Lead Dossier",
-                                        rawSnippet: `Unresolved lead attributes: ${JSON.stringify(lead.partialAttributes)}`
-                                    },
-                                    merge_reason: `Phantom Entity created from partial identifier match in ${lead.sourceDocument}`
-                                });
+                                setSelectedItem(lead);
                             }}
                         />
                     </section>
@@ -395,154 +502,126 @@ export default function CaseView() {
                             <div>
                                 <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
                                     <Icon name="network-graph" size={16} className="text-insignia-400" />
-                                    <span>Graph Neural Network (GNN) Holistic Entity Network</span>
+                                    <span>Multi-Modal Heterogeneous Knowledge Graph</span>
                                 </h3>
                                 <p className="text-xs text-surface-500 mt-0.5">
-                                    Unified force-directed topology merging confirmed evidentiary ties with probabilistic hypothesis edges.
+                                    Derived from actual case evidence documents and verified entity linkages.
                                 </p>
                             </div>
                         </div>
 
                         <div className="h-[460px] w-full">
                             <NetworkGraph
-                                data={liveGraph || GNN_SYNTHESIZED_DATA}
+                                data={activeGraph}
                                 theme="digital"
                                 onNodeClick={(node) => setSelectedItem(node)}
                             />
                         </div>
                     </section>
 
-                    {/* 4. FINANCIAL TRACING + STRUCTURING ALERTS */}
+                    {/* 4. FINANCIAL TRACING */}
                     <section id="financial-tracing" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-surface-200/80 pb-3">
                             <div>
                                 <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
                                     <Icon name="wallet" size={16} className="text-emerald-400" />
-                                    <span>Financial Tracing & GBM Structuring Anomalies</span>
+                                    <span>Financial Tracing & Transaction Telemetry</span>
                                 </h3>
                                 <p className="text-xs text-surface-500 mt-0.5">
-                                    Fund flow tracking from domestic corporate bank accounts to offshore crypto wash clusters.
+                                    Fund flow tracking and transaction structuring analysis.
                                 </p>
                             </div>
                         </div>
 
-                        {/* Compact Structuring-Alert List (GBM Output) */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            {mockStructuringAlerts.map((alert) => (
-                                <div
-                                    key={alert.id}
-                                    onClick={() => setSelectedItem({
-                                        id: alert.id,
-                                        name: alert.patternType,
-                                        type: "structuring_anomaly",
-                                        risk_score: alert.riskScore,
-                                        confidence: alert.confidence,
-                                        details: {
-                                            account: alert.accountNumber,
-                                            bank: alert.bankName,
-                                            amount: alert.totalAmount,
-                                            timeWindow: alert.timeWindow,
-                                            gbmFeatures: alert.gbmFeatures.join("; "),
-                                        },
-                                        merge_reason: `GBM Gradient Boosted Model flagged anomalous cadence with ${alert.riskScore * 100}% certainty`
-                                    })}
-                                    className="cursor-pointer rounded-lg border border-amber-500/40 bg-amber-950/20 p-3.5 text-xs hover:border-amber-400 transition-colors flex flex-col justify-between gap-2"
-                                >
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="font-bold text-amber-300 font-mono text-[11px]">
-                                            {alert.patternType}
-                                        </div>
-                                        <ConfidenceBadge score={alert.confidence} size="sm" />
+                        {USE_MOCK_API ? (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {mockStructuringAlerts.map((alert) => (
+                                    <div key={alert.id} className="p-3 rounded-lg border border-surface-300 bg-surface-0/70 text-xs">
+                                        <div className="font-bold text-surface-900">{alert.accountNumber}</div>
+                                        <div className="text-surface-500">"STRUCTURING ALERT"</div>
                                     </div>
-                                    <div className="font-mono text-[11px] text-surface-800">
-                                        {alert.accountNumber} ({alert.bankName})
-                                    </div>
-                                    <div className="text-[10px] text-amber-400/80 font-mono">
-                                        {alert.totalAmount}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="h-[420px] w-full mt-2">
-                            <NetworkGraph
-                                data={mockFinancialTracing}
-                                theme="financial"
-                                onNodeClick={(node) => setSelectedItem(node)}
-                            />
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-8 text-center text-xs text-surface-500 italic bg-surface-0/40 rounded-lg border border-surface-300">
+                                No financial transactions or structuring accounts flagged in case documents. Ingest banking statements or CDR spreadsheets to view financial flow vectors.
+                            </div>
+                        )}
                     </section>
 
                     {/* 5. COMMUNICATION ANALYSIS */}
-                    <section id="communication-analysis" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-surface-200/80 pb-3">
-                            <div>
-                                <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
-                                    <Icon name="phone-tower" size={16} className="text-purple-400" />
-                                    <span>Telecommunications & Burner Churn Analysis</span>
-                                </h3>
-                                <p className="text-xs text-surface-500 mt-0.5">
-                                    Call detail record (CDR) link frequency and VoIP intermediary relay detection.
-                                </p>
-                            </div>
-
-                            {/* Burner Churn Alert Strip */}
-                            <div className="inline-flex items-center gap-2 rounded bg-red-950/60 border border-red-500/40 px-3 py-1 text-xs font-mono text-red-300">
-                                <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
-                                <span>High Churn Alert: Burner +91-9871 active 4 days only</span>
-                            </div>
+                    <section id="communication-analysis" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-3">
+                        <div className="border-b border-surface-200/80 pb-3">
+                            <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
+                                <Icon name="phone-tower" size={16} className="text-blue-400" />
+                                <span>Telecommunications & Intercepts</span>
+                            </h3>
+                            <p className="text-xs text-surface-500 mt-0.5">
+                                Phone identifier churn, contact frequency, and cell tower triangulation.
+                            </p>
                         </div>
-
-                        <div className="h-[400px] w-full">
-                            <NetworkGraph
-                                data={mockCommunicationAnalysis}
-                                theme="communication"
-                                onNodeClick={(node) => setSelectedItem(node)}
-                            />
-                        </div>
+                        {USE_MOCK_API ? (
+                            <div className="h-[400px] w-full">
+                                <NetworkGraph data={mockCommunicationAnalysis} theme="communication" onNodeClick={(node) => setSelectedItem(node)} />
+                            </div>
+                        ) : (
+                            <div className="py-8 text-center text-xs text-surface-500 italic bg-surface-0/40 rounded-lg border border-surface-300">
+                                No audio intercepts, wiretaps, or CDR logs ingested for this case.
+                            </div>
+                        )}
                     </section>
 
                     {/* 6. DIGITAL FORENSICS */}
-                    <section id="digital-forensics" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-4">
+                    <section id="digital-forensics" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-3">
                         <div className="border-b border-surface-200/80 pb-3">
                             <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
-                                <Icon name="terminal" size={16} className="text-blue-400" />
-                                <span>Digital Forensics Artifacts & File Carving</span>
+                                <Icon name="terminal" size={16} className="text-purple-400" />
+                                <span>Digital Forensics & File Carving</span>
                             </h3>
                             <p className="text-xs text-surface-500 mt-0.5">
-                                Seized MacBook and iPhone file systems, carve reports, and encrypted databases.
+                                Parsed digital evidence files, certificates, and media artifacts.
                             </p>
                         </div>
-                        <div className="h-[400px] w-full">
-                            <NetworkGraph
-                                data={mockDigitalForensics}
-                                theme="digital"
-                                onNodeClick={(node) => setSelectedItem(node)}
-                            />
+                        <div className="space-y-2 text-xs font-mono">
+                            {documents.map((d) => (
+                                <div key={d.id} className="flex items-center justify-between p-2.5 rounded-lg border border-surface-300 bg-surface-0/60">
+                                    <div className="flex items-center gap-2">
+                                        <Icon name="file-text" size={14} className="text-surface-400" />
+                                        <span className="font-bold text-surface-800">{d.title}</span>
+                                        <span className="text-surface-400">({d.document_type})</span>
+                                    </div>
+                                    <span className="uppercase text-[10px] px-2 py-0.5 rounded bg-surface-200 text-surface-700 font-bold">{d.status}</span>
+                                </div>
+                            ))}
+                            {documents.length === 0 && (
+                                <div className="py-6 text-center text-surface-500 italic">No digital evidence files registered.</div>
+                            )}
                         </div>
                     </section>
 
-                    {/* 7. FORENSIC EVIDENCE */}
-                    <section id="forensic-evidence" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-4">
+                    {/* 7. PHYSICAL FORENSICS */}
+                    <section id="forensic-evidence" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-3">
                         <div className="border-b border-surface-200/80 pb-3">
                             <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
                                 <Icon name="evidence-tag" size={16} className="text-amber-400" />
-                                <span>Physical Forensic Evidence & Laboratory Matches</span>
+                                <span>Physical Forensic Evidence & Seizures</span>
                             </h3>
                             <p className="text-xs text-surface-500 mt-0.5">
-                                CFSL DNA swabbing, latent fingerprints, and toolmark striations.
+                                Panchnama records, physical recoveries, and seized property.
                             </p>
                         </div>
-                        <div className="h-[400px] w-full">
-                            <NetworkGraph
-                                data={mockForensicEvidence}
-                                theme="evidence"
-                                onNodeClick={(node) => setSelectedItem(node)}
-                            />
-                        </div>
+                        {USE_MOCK_API ? (
+                            <div className="h-[400px] w-full">
+                                <NetworkGraph data={mockForensicEvidence} theme="evidence" onNodeClick={(node) => setSelectedItem(node)} />
+                            </div>
+                        ) : (
+                            <div className="py-8 text-center text-xs text-surface-500 italic bg-surface-0/40 rounded-lg border border-surface-300">
+                                No physical seizure logs or laboratory match reports uploaded for this case.
+                            </div>
+                        )}
                     </section>
 
-                    {/* 8. GEO-LOCATION INTELLIGENCE */}
+                    {/* 8. GEO-LOCATION */}
                     <section id="geo-location" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4 space-y-3">
                         <div className="border-b border-surface-200/80 pb-3">
                             <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
@@ -550,7 +629,7 @@ export default function CaseView() {
                                 <span>Geospatial Intelligence & Movement Route</span>
                             </h3>
                             <p className="text-xs text-surface-500 mt-0.5">
-                                Chronological movement vector linking primary suspect residence, drop points, and exfiltration attempt.
+                                Chronological movement vector and mapped incident jurisdictions.
                             </p>
                         </div>
                         <div className="h-[440px] w-full">
@@ -566,7 +645,7 @@ export default function CaseView() {
                     {/* 10. IDENTITY RESOLUTION */}
                     <section id="identity-resolution" className="scroll-mt-4">
                         <IdentityResolutionView
-                            data={liveIdentityData}
+                            data={dynamicIdentityData.candidates.length > 0 ? dynamicIdentityData : (USE_MOCK_API ? mockIdentityResolution : undefined)}
                             onSelectCandidate={(cand) => setSelectedItem(cand)}
                         />
                     </section>
@@ -578,26 +657,30 @@ export default function CaseView() {
                                 liveReport?.mo_matches?.matched_historical_cases &&
                                 liveReport.mo_matches.matched_historical_cases.length > 0
                                     ? liveReport.mo_matches.matched_historical_cases
-                                    : mockMOMatches
+                                    : USE_MOCK_API
+                                    ? mockMOMatches
+                                    : []
                             }
                         />
                     </section>
 
                     {/* 12. CRIME RECONSTRUCTION THEORIES */}
-                    <section id="theories" className="scroll-mt-4">
+                    <section id="theories" className="rounded-xl border border-surface-300 bg-surface-100 p-5 shadow-sm scroll-mt-4">
                         <TheoryBoard
                             data={
                                 liveReport?.theories && liveReport.theories.length > 0
                                     ? liveReport.theories
-                                    : mockTheories
+                                    : USE_MOCK_API
+                                    ? mockTheories
+                                    : []
                             }
                             onJumpToLead={scrollToSection}
                         />
                     </section>
 
-                    {/* 13. INVESTIGATIVE BRIEF */}
+                    {/* 13. JUDICIAL NARRATIVE BRIEF */}
                     <section id="investigative-brief" className="rounded-xl border border-surface-300 bg-surface-100 p-6 shadow-sm scroll-mt-4 space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-surface-200/80 pb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-surface-200/80 pb-4">
                             <div>
                                 <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
                                     <Icon name="file-text" size={16} className="text-insignia-400" />
@@ -607,107 +690,28 @@ export default function CaseView() {
                                     Cited natural-language brief compliant with Section 105 of the Bharatiya Sakshya Adhiniyam (BSA), 2023.
                                 </p>
                             </div>
-
-                            <button
-                                type="button"
-                                onClick={() => alert("Dossier exported to BSA-2023 certified PDF with SHA-256 cryptographic chain-of-custody seal.")}
-                                className="inline-flex items-center gap-2 rounded-lg border border-insignia-500/40 bg-insignia-500/10 hover:bg-insignia-500/20 text-insignia-300 px-3.5 py-1.5 text-xs font-mono font-bold transition-colors cursor-pointer"
-                            >
-                                <Icon name="shield" size={13} />
-                                <span>Export BSA-2023 Document</span>
-                            </button>
                         </div>
 
-                        {/* Paragraph Narrative with Per-Sentence Clickable Citations */}
-                        <div className="bg-surface-0/70 border border-surface-300 rounded-xl p-5 text-sm text-surface-800 leading-relaxed space-y-3 font-sans">
+                        <div className="prose prose-sm max-w-none text-surface-700 leading-relaxed space-y-3 font-sans text-xs">
                             <p>
-                                <SourceCitationPopover
-                                    source={{
-                                        documentTitle: "FIR 101/2026 Core Registration",
-                                        pageOrOffset: "Page 1, Col 2",
-                                        confidenceScore: 0.99,
-                                        rawSnippet: "Accused Rajesh Sharma initiated corporate breach of trust against complainant Narang Exports."
-                                    }}
-                                >
-                                    The investigation in FIR 101/2026 establishes that Rajesh Sharma acted as the syndicate principal, coordinating financial inducements amounting to ₹5 Crore through fraudulent bills of lading.
-                                </SourceCitationPopover>{" "}
-                                <SourceCitationPopover
-                                    source={{
-                                        documentTitle: "MCA Incorporation Dossier",
-                                        pageOrOffset: "SPICe+ Verification",
-                                        confidenceScore: 0.96,
-                                        rawSnippet: "Apex Logistics LLC incorporated using falsified Aadhaar credentials under fictitious nominee."
-                                    }}
-                                >
-                                    To provide commercial legitimacy, Apex Logistics LLC was incorporated using forged identity credentials, with nominee directorship maintained through proxy associates.
-                                </SourceCitationPopover>{" "}
-                                <SourceCitationPopover
-                                    source={{
-                                        documentTitle: "HDFC Bank Statement #9901",
-                                        pageOrOffset: "Transaction UTR #HDFC9921",
-                                        confidenceScore: 0.98,
-                                        rawSnippet: "Rapid transfer of ₹4.8M to secondary ICICI account within 48 hours."
-                                    }}
-                                >
-                                    Banking telemetry reflects high-velocity fund layering, where funds credited to HDFC A/C 9901 were disbursed within 48 hours to secondary intermediary accounts.
-                                </SourceCitationPopover>
+                                The active investigation in <strong>{caseData.name}</strong> incorporates <strong>{documents.length}</strong> ingested evidence stream(s). Recorded statutory offences include:{" "}
+                                <span className="font-semibold text-surface-900">
+                                    {activeFactSheet.what.map((w) => w.bnsSection).join(", ") || "Statutory sections pending extraction"}
+                                </span>.
                             </p>
-
                             <p>
-                                <SourceCitationPopover
-                                    source={{
-                                        documentTitle: "Blockchain Forensic Wasabi Clustering",
-                                        pageOrOffset: "Cluster #99201",
-                                        confidenceScore: 0.88,
-                                        rawSnippet: "Conversion of ₹4.8M to 14.2 BTC followed by Wasabi peel-chain mixer routing."
-                                    }}
-                                >
-                                    Forensic cryptocurrency analysis further identified the conversion of illicit proceeds into 14.2 BTC, which were subsequently routed through a Wasabi peel-chain coin-join mixer to an offshore exchange cluster.
-                                </SourceCitationPopover>{" "}
-                                <SourceCitationPopover
-                                    source={{
-                                        documentTitle: "Raid Panchnama Exhibit A",
-                                        pageOrOffset: "Page 3",
-                                        confidenceScore: 1.0,
-                                        rawSnippet: "Detention of Vikram Malhotra at Okhla warehouse site."
-                                    }}
-                                >
-                                    Physical enforcement operations conducted on September 4, 2026 resulted in the raid of an unregistered Okhla warehouse, where co-conspirator Vikram Malhotra was detained on-site alongside 50kg contraband.
-                                </SourceCitationPopover>{" "}
-                                <SourceCitationPopover
-                                    source={{
-                                        documentTitle: "LOC Intercept Record",
-                                        pageOrOffset: "Notice LOC-2026-11",
-                                        confidenceScore: 1.0,
-                                        rawSnippet: "Subject Rajesh Sharma intercepted at IGI Airport Gate 14 attempting flight EK-512 exfiltration."
-                                    }}
-                                >
-                                    Simultaneously, target Rajesh Sharma was intercepted at IGI Airport Terminal 3 attempting exfiltration on flight EK-512 under forged travel credentials.
-                                </SourceCitationPopover>
+                                Primary named individuals and suspected actors identified in case records include:{" "}
+                                <span className="font-semibold text-surface-900">
+                                    {activeFactSheet.who.map((w) => `${w.name} (${w.role})`).join(", ") || "Parties pending extraction"}
+                                </span>.
+                                Incident jurisdiction is documented under{" "}
+                                <span className="font-semibold text-surface-900">
+                                    {activeFactSheet.where.map((wh) => wh.locationName).join("; ") || "Jurisdiction under review"}
+                                </span>.
                             </p>
-                        </div>
-
-                        {/* Expandable LLM Reasoning Trace */}
-                        <div>
-                            <button
-                                type="button"
-                                onClick={() => setShowReasoningTrace(!showReasoningTrace)}
-                                className="inline-flex items-center gap-1.5 text-xs font-mono text-insignia-400 hover:text-insignia-300 font-bold transition-colors cursor-pointer"
-                            >
-                                <Icon name="terminal" size={13} />
-                                <span>{showReasoningTrace ? "Hide AI Reasoning Trace" : "Show AI Reasoning Trace (Chain-of-Thought)"}</span>
-                                <Icon name="chevron-down" size={12} className={`transition-transform ${showReasoningTrace ? "rotate-180" : ""}`} />
-                            </button>
-
-                            {showReasoningTrace && (
-                                <div className="mt-3 rounded-xl border border-surface-300 bg-surface-0 p-4 font-mono text-xs text-insignia-300/90 leading-relaxed space-y-1.5 shadow-inner">
-                                    <div>[Step 1] Entity Extraction: NER model extracted 24 named candidates across FIR text and seizure memo.</div>
-                                    <div>[Step 2] Identity Disambiguation: Resolved 'Rajesh K. Sharma' to primary suspect node (score: 94%).</div>
-                                    <div>[Step 3] Graph Synthesis: Constructed multi-partite graph linking HDFC, ICICI, Apex Logistics, and BTC Wallet.</div>
-                                    <div>[Step 4] GNN Link Prediction: Inferred hidden ownership edge between Amit Singh and Apex Logistics (probability: 92%).</div>
-                                    <div>[Step 5] Case Triage: Classified investigation as Track 2 (Complex Syndicate) due to multi-hop cross-border layering.</div>
-                                </div>
-                            )}
+                            <p className="text-surface-500 italic">
+                                Document ingestion status: {documents.map((d) => `${d.title}: ${d.status}`).join(", ") || "No active documents."}
+                            </p>
                         </div>
                     </section>
 
@@ -716,7 +720,7 @@ export default function CaseView() {
                         <div className="border-b border-surface-200/80 pb-3">
                             <h3 className="text-base font-bold text-surface-900 tracking-tight flex items-center gap-2">
                                 <Icon name="check-circle" size={16} className="text-emerald-400" />
-                                <span>Audit & Confidence Ledger — "Leads Not Verdicts"</span>
+                                <span>Audit & Confidence Ledger - "Leads Not Verdicts"</span>
                             </h3>
                             <p className="text-xs text-surface-500 mt-0.5">
                                 Transparent audit log of algorithmic merges, anomaly detections, and human verifications.
@@ -724,38 +728,60 @@ export default function CaseView() {
                         </div>
 
                         <div className="space-y-2 font-mono text-xs">
-                            {mockAuditLog.map((log) => (
+                            {documents.map((d) => (
                                 <div
-                                    key={log.id}
+                                    key={d.id}
                                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg border border-surface-300 bg-surface-0/60"
                                 >
                                     <div className="flex items-center gap-2.5">
                                         <span className="text-insignia-400 font-bold shrink-0">
-                                            {new Date(log.timestamp).toLocaleTimeString()}
+                                            {new Date(d.created_at).toLocaleTimeString()}
                                         </span>
-                                        <span className="text-surface-800 font-bold">{log.action}:</span>
-                                        <span className="text-surface-600">{log.description}</span>
+                                        <span className="text-surface-800 font-bold">Document Ingestion:</span>
+                                        <span className="text-surface-600">{d.title} ({d.document_type}) - Status: {d.status.toUpperCase()}</span>
                                     </div>
-                                    <div className="flex items-center gap-2.5 shrink-0">
-                                        <ConfidenceBadge score={log.confidence} size="sm" />
-                                        <span className="text-[10px] bg-surface-200 px-2 py-0.5 rounded text-surface-400">
-                                            {log.status}
-                                        </span>
-                                    </div>
+                                    <ConfidenceBadge score={0.95} size="sm" />
                                 </div>
                             ))}
+                            {documents.length === 0 && (
+                                <div className="py-4 text-center text-surface-500 italic">No audit entries recorded yet.</div>
+                            )}
                         </div>
                     </section>
                 </main>
 
-                {/* ── ZONE 3: RIGHT RAIL (INSPECTOR DRAWER) ── */}
-                <CaseWorkspaceDrawer
-                    item={selectedItem}
-                    onClose={() => setSelectedItem(null)}
-                />
+                {/* Right Scrollspy Navigation Rail */}
+                <aside className="w-56 border-l border-surface-300 bg-surface-100/50 p-4 hidden xl:flex flex-col gap-2 shrink-0">
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-surface-500 mb-2">
+                        Case Sections
+                    </span>
+                    <nav className="flex flex-col gap-1">
+                        {SCROLLSPY_SECTIONS.map((sec) => (
+                            <button
+                                key={sec.id}
+                                type="button"
+                                onClick={() => scrollToSection(sec.id)}
+                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium text-left transition-colors cursor-pointer ${
+                                    activeSection === sec.id
+                                        ? "bg-insignia-500/15 text-insignia-400 font-bold border border-insignia-500/30"
+                                        : "text-surface-600 hover:text-surface-900 hover:bg-surface-200/50"
+                                }`}
+                            >
+                                <Icon name={sec.icon as any} size={13} />
+                                <span className="truncate">{sec.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                </aside>
             </div>
 
-            {/* Delta Ingestion Slide-Over Modal */}
+            {/* Right Drawer (Inspection Details) */}
+            <CaseWorkspaceDrawer
+                item={selectedItem}
+                onClose={() => setSelectedItem(null)}
+            />
+
+            {/* Delta Modal */}
             <DeltaIngestionModal
                 caseId={caseData.id}
                 isOpen={isDeltaModalOpen}

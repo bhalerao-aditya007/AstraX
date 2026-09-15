@@ -16,20 +16,10 @@ export default function Navbar() {
             {/* Logo + Emblem */}
             <div className="flex items-center gap-6">
                 <Link to="/" className="flex items-center gap-3 group">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-insignia-500/15 border border-insignia-500/40 text-insignia-400 shadow-[0_0_12px_rgba(201,162,39,0.2)] group-hover:scale-105 transition-transform">
-                        <Icon name="shield" size={16} />
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-base font-extrabold tracking-tight text-surface-900 leading-none flex items-center gap-1.5">
-                            <span>AstraX</span>
-                            <span className="text-[10px] font-mono font-bold bg-insignia-500/20 text-insignia-300 px-1.5 py-0.2 rounded border border-insignia-500/30">
-                                OPS
-                            </span>
-                        </span>
-                        <span className="text-[9px] font-mono tracking-wider text-surface-400 uppercase mt-0.5">
-                            Criminal Network Intelligence
-                        </span>
-                    </div>
+                    <img src="/astrax-logo.png" alt="AstraX Logo" className="h-9 w-9 rounded-lg object-contain group-hover:scale-105 transition-transform" />
+                    <span className="text-lg font-extrabold tracking-tight text-surface-900 leading-none" style={{ fontFamily: "Georgia, serif" }}>
+                        AstraX
+                    </span>
                 </Link>
 
                 {/* Primary Nav Links */}
@@ -61,7 +51,7 @@ export default function Navbar() {
             <div className="flex items-center gap-4 text-xs font-mono">
                 <div className="hidden md:flex items-center gap-2 text-surface-400">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                    <span>Air-Gapped Node #DEL-04</span>
+                    <span>Air Gapped System</span>
                 </div>
 
                 <Link

@@ -17,6 +17,15 @@ const fadeUp = {
     }),
 };
 
+const marqueeItems = [
+    { text: "National Automated Fingerprint Identification System (NAFIS) Biometric De-Duplication", color: "text-emerald-400" },
+    { text: "Inter-State Cyber Syndicate Attribution & GNN Topology Reconstruction", color: "text-insignia-400" },
+    { text: "Multi-Banking CDR, IPDR & Layered Mule Account Financial Forensics", color: "text-surface-300" },
+    { text: "Bharatiya Nyaya Sanhita (BNS) Statutory Offence Taxonomy & Section Mapping", color: "text-insignia-300" },
+    { text: "Decentralized Crypto Mixer Peel-Chain & Asset Recovery Tracking", color: "text-purple-400" },
+    { text: "Air-Gapped Sovereign Digital Evidence Chain-of-Custody (BSA 2023)", color: "text-surface-300" },
+];
+
 const features = [
     {
         icon: "upload" as const,
@@ -38,20 +47,20 @@ const features = [
 export default function Landing() {
     return (
         <div className="min-h-screen bg-surface-0 font-sans text-surface-700 selection:bg-insignia-500/30 selection:text-white">
-            {/* ── Nav ─────────────────────────────────── */}
+            {/* Header Nav */}
             <nav className="relative z-20 mx-auto flex h-20 max-w-7xl items-center justify-between px-6 border-b border-surface-200/50">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-insignia-500/15 border border-insignia-500/40 text-insignia-400 shadow-[0_0_15px_rgba(201,162,39,0.25)]">
-                        <Icon name="shield" size={18} />
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-xl font-extrabold tracking-tight text-surface-900 leading-none">
-                            AstraX
-                        </span>
-                        <span className="text-[10px] font-mono tracking-widest text-surface-400 uppercase mt-0.5">
-                            SIH26189 Ops Platform
-                        </span>
-                    </div>
+                    <img
+                        src="/astrax-logo.png"
+                        alt="AstraX Logo"
+                        className="h-9 w-9 rounded-lg object-contain shadow-[0_0_15px_rgba(201,162,39,0.25)]"
+                    />
+                    <span
+                        className="text-xl font-extrabold tracking-tight text-surface-900 leading-none"
+                        style={{ fontFamily: "Georgia, serif" }}
+                    >
+                        AstraX
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -70,7 +79,7 @@ export default function Landing() {
                 </div>
             </nav>
 
-            {/* ── Hero ────────────────────────────────── */}
+            {/* Hero */}
             <section className="relative overflow-hidden pt-12 pb-24 lg:pt-20 lg:pb-32 bg-radial from-surface-50/80 to-surface-0">
                 {/* 3D Neural Hero Background */}
                 <div className="absolute inset-0 z-0 opacity-75">
@@ -104,7 +113,7 @@ export default function Landing() {
                             className="text-4xl font-black leading-[1.12] tracking-tight text-surface-900 sm:text-5xl lg:text-6xl"
                         >
                             Tactical Graph Intelligence for{" "}
-                            <span className="text-insignia-400">Organized Crime Cells.</span>
+                            <span className="text-insignia-400">Organized Crime Cells</span>
                         </motion.h1>
 
                         <motion.p
@@ -123,37 +132,22 @@ export default function Landing() {
                             animate="visible"
                             variants={fadeUp}
                             custom={3}
-                            className="mt-8 flex flex-wrap items-center gap-4"
+                            className="mt-10 flex flex-wrap items-center gap-4"
                         >
-                            {/* CTA 1: Primary Amber */}
                             <Link
                                 to="/intake"
-                                className="flex items-center gap-2 rounded-xl bg-insignia-500 px-7 py-3.5 text-sm font-extrabold text-surface-0 shadow-lg shadow-insignia-500/25 transition-all hover:bg-insignia-400 hover:shadow-insignia-500/35 cursor-pointer"
+                                className="inline-flex items-center gap-2 rounded-xl bg-insignia-500 px-6 py-3.5 text-sm font-bold text-surface-0 shadow-lg shadow-insignia-500/25 hover:bg-insignia-400 hover:scale-[1.02] transition-all cursor-pointer"
                             >
-                                <Icon name="radar" size={16} />
-                                <span>Run New Analysis</span>
+                                <Icon name="upload" size={16} />
+                                <span>Ingest Case Evidence</span>
                             </Link>
-
-                            {/* CTA 2: Secondary Outlined */}
                             <Link
                                 to="/dashboard"
-                                className="flex items-center gap-2 rounded-xl border border-surface-300 bg-surface-100/90 px-7 py-3.5 text-sm font-bold text-surface-200 shadow-sm transition-all hover:bg-surface-200 hover:border-surface-400 cursor-pointer"
+                                className="inline-flex items-center gap-2 rounded-xl border border-surface-300 bg-surface-100/80 px-6 py-3.5 text-sm font-bold text-surface-800 hover:bg-surface-200 hover:text-white transition-all backdrop-blur-sm"
                             >
                                 <Icon name="folder" size={16} />
                                 <span>View Case History</span>
                             </Link>
-                        </motion.div>
-
-                        {/* One-Line Trust Strip (Document Requirement) */}
-                        <motion.div
-                            initial="hidden"
-                            animate="visible"
-                            variants={fadeUp}
-                            custom={4}
-                            className="mt-8 pt-6 border-t border-surface-200/60 flex items-center gap-2 text-xs font-mono text-surface-400"
-                        >
-                            <Icon name="shield" size={14} className="text-insignia-400 shrink-0" />
-                            <span>BSA 2023-aligned • DPDP-compliant • On-prem deployable</span>
                         </motion.div>
                     </div>
 
@@ -171,44 +165,41 @@ export default function Landing() {
                                 className="w-full rounded-xl object-cover border border-surface-300"
                             />
 
-                            {/* Tactical Callout Pill */}
-                            <div className="absolute -left-6 top-1/3 hidden rounded-xl border border-insignia-500/40 bg-surface-100/95 backdrop-blur-md p-3.5 shadow-2xl sm:block w-52 font-mono">
-                                <div className="flex items-center gap-2 mb-1.5">
-                                    <span className="h-2 w-2 rounded-full bg-insignia-400 animate-ping" />
-                                    <span className="text-[11px] font-bold text-insignia-300 uppercase">
-                                        Active Linkage
-                                    </span>
-                                </div>
-                                <div className="text-xs font-bold text-surface-900">Apex Logistics LLC</div>
-                                <div className="text-[10px] text-surface-500 mt-0.5">Hidden Owner: 92% Match</div>
+                            {/* Compact Tactical Callout Pill */}
+                            <div className="absolute -left-4 top-1/4 hidden rounded-lg border border-emerald-500/40 bg-surface-100/95 backdrop-blur-md px-3.5 py-2 shadow-2xl sm:flex items-center gap-2.5 font-mono">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                </span>
+                                <span className="text-xs font-bold text-emerald-400 tracking-wider uppercase">
+                                    Verified Intelligence Link
+                                </span>
                             </div>
                         </div>
                     </motion.div>
                 </div>
             </section>
 
-            {/* ── Marquee Strip ────────── */}
+            {/* Marquee Strip */}
             <section className="border-y border-surface-200/80 bg-surface-50 py-4 overflow-hidden">
                 <div className="relative flex w-full overflow-hidden">
-                    <div className="animate-marquee flex whitespace-nowrap items-center text-xs font-mono font-bold text-surface-400 uppercase tracking-widest">
-                        <span className="mx-6 text-insignia-400">BNS Statutory Taxonomy</span>
-                        <span className="mx-6">•</span>
-                        <span className="mx-6">Graph Neural Network Link Prediction</span>
-                        <span className="mx-6">•</span>
-                        <span className="mx-6 text-emerald-400">NAFIS Biometric Fingerprint Integration</span>
-                        <span className="mx-6">•</span>
-                        <span className="mx-6">GBM Financial Structuring Anomaly Detection</span>
-                        <span className="mx-6">•</span>
-                        <span className="mx-6 text-purple-400">Wasabi Crypto Mixer Peel-Chain Cluster</span>
-                        <span className="mx-6">•</span>
-                        <span className="mx-6">BNS Statutory Taxonomy</span>
-                        <span className="mx-6">•</span>
-                        <span className="mx-6">Graph Neural Network Link Prediction</span>
+                    <div className="animate-marquee flex whitespace-nowrap items-center text-xs font-mono font-bold tracking-wider uppercase py-1">
+                        {[...marqueeItems, ...marqueeItems, ...marqueeItems].map((item, idx) => (
+                            <span key={idx} className="inline-flex items-center shrink-0">
+                                <span className={`mx-2 ${item.color}`}>{item.text}</span>
+                                <img
+                                    src="/emblem.png"
+                                    alt=""
+                                    aria-hidden="true"
+                                    className="h-6 w-auto object-contain mx-6 inline-block opacity-90 drop-shadow-[0_0_8px_rgba(201,162,39,0.35)] shrink-0"
+                                />
+                            </span>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            {/* ── Problem Section ───────────────── */}
+            {/* Problem Section */}
             <section className="py-24 bg-surface-0">
                 <div className="mx-auto max-w-7xl px-6">
                     <motion.div
@@ -235,7 +226,7 @@ export default function Landing() {
                 </div>
             </section>
 
-            {/* ── Features ────────────────────────────── */}
+            {/* Features */}
             <section className="py-24 bg-surface-50 border-t border-surface-200/80">
                 <div className="mx-auto max-w-7xl px-6">
                     <motion.div
@@ -276,7 +267,7 @@ export default function Landing() {
                 </div>
             </section>
 
-            {/* ── Visual Insight Section ───────────────── */}
+            {/* Visual Insight Section */}
             <section className="py-24 bg-surface-0 border-t border-surface-200/80">
                 <div className="mx-auto max-w-7xl px-6 lg:flex lg:items-center lg:gap-16">
                     <motion.div
@@ -304,7 +295,7 @@ export default function Landing() {
                         className="mt-12 lg:mt-0 lg:w-1/2"
                     >
                         <h2 className="text-3xl font-extrabold tracking-tight text-surface-900 sm:text-4xl">
-                            Transparent Link Probabilities — Leads Not Verdicts
+                            Transparent Link Probabilities - Leads Not Verdicts
                         </h2>
                         <p className="mt-6 text-base leading-relaxed text-surface-600">
                             Every AI-derived prediction in AstraX is accompanied by plain-language qualifiers and interactive source citations. Hypotheses remain clearly distinguished from confirmed forensic evidence.
@@ -331,19 +322,23 @@ export default function Landing() {
                 </div>
             </section>
 
-            {/* ── Footer ──────────────────────────────── */}
+            {/* Footer */}
             <footer className="border-t border-surface-200/80 bg-surface-50 py-12 text-surface-500 text-xs">
                 <div className="mx-auto max-w-7xl px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-insignia-500/15 border border-insignia-500/30 text-insignia-400">
-                            <Icon name="shield" size={14} />
-                        </div>
-                        <span className="font-extrabold text-surface-900 text-sm tracking-tight">AstraX</span>
-                        <span className="font-mono text-[11px] text-surface-400">| SIH26189 Official Command Suite</span>
+                        <img
+                            src="/astrax-logo.png"
+                            alt="AstraX Logo"
+                            className="h-7 w-7 rounded-lg object-contain"
+                        />
+                        <span className="font-extrabold text-surface-900 text-sm tracking-tight" style={{ fontFamily: "Georgia, serif" }}>
+                            AstraX
+                        </span>
+                        <span className="font-mono text-[11px] text-surface-400">| Tactical Crime Graph Intelligence</span>
                     </div>
 
                     <p className="font-mono">
-                        Designed for State Police Cyber Crime Cells • Air-Gapped / On-Prem Architecture
+                        Designed for State Police Cyber Crime Cells • Air Gapped System
                     </p>
                 </div>
             </footer>
